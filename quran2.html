@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Quran App</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --primary-color: #00e676;
+            --secondary-color: #424242;
+            --accent-color: #000000;
+            --highlight-color: #ffeb3b;
+            --border-color: #333;
+            --font-size-base: 16px;
+            --font-size-arabic: 1.8rem;
+            --font-size-translation: 1rem;
+            --line-height-base: 1.6;
+            --spacing-unit: 8px;
+            --font-family-arabic: 'Noto Naskh Arabic', serif;
+            --font-family-urdu: 'Noto Nastaliq Urdu', serif;
+            --font-family-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --text-color: #212121;
+            --primary-color: #00c853;
+            --secondary-color: #e0e0e0;
+            --accent-color: #bdbdbd;
+            --highlight-color: #fbc02d;
+            --border-color: #ccc;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overscroll-behavior: contain;
+            font-family: var(--font-family-ui);
+            font-size: var(--font-size-base);
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            line-height: var(--line-height-base);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background-color: var(--secondary-color);
+            padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .app-header h1 {
+            font-size: 1.4rem;
+            font-weight: normal;
+            color: var(--primary-color);
+        }
+
+        .header-controls button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-left: var(--spacing-unit);
+            padding: var(--spacing-unit);
+        }
+
+        .app-main {
+            flex-grow: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .nav-panel, .content-panel, .settings-panel {
+            height: 100%;
+            overflow-y: auto;
+            padding: calc(var(--spacing-unit) * 2);
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) var(--secondary-color);
+        }
+
+        .nav-panel {
+            width: 280px;
+            min-width: 220px;
+            border-right: 1px solid var(--border-color);
+            background-color: var(--secondary-color);
+            flex-shrink: 0;
+            transition: transform 0.3s ease, margin-left 0.3s ease;
+        }
+
+        .nav-panel ul {
+            list-style: none;
+        }
+
+        .nav-panel li {
+            padding: var(--spacing-unit) 0;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .nav-panel li:hover, .nav-panel li.active {
+            background-color: rgba(0, 230, 118, 0.1);
+            color: var(--primary-color);
+        }
+
+        .nav-panel li span {
+            display: block;
+        }
+        .nav-panel .surah-number {
+            font-size: 0.8em;
+            color: var(--accent-color);
+            margin-right: var(--spacing-unit);
+        }
+         .nav-panel .surah-name-ar {
+            font-family: var(--font-family-arabic);
+            font-size: 1.2em;
+            float: right;
+         }
+
+        .content-panel {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .ayah {
+            border-bottom: 1px dashed var(--border-color);
+            padding: calc(var(--spacing-unit) * 1.5) 0;
+            margin-bottom: var(--spacing-unit);
+            position: relative;
+            font-size: var(--font-size-base);
+        }
+
+        .ayah-arabic {
+            font-family: var(--font-family-arabic);
+            font-size: var(--font-size-arabic);
+            line-height: 2.2;
+            margin-bottom: var(--spacing-unit);
+            text-align: right;
+            direction: rtl;
+        }
+
+        .ayah-translation {
+            font-family: var(--font-family-urdu);
+            font-size: var(--font-size-translation);
+            line-height: 1.8;
+            text-align: right;
+            direction: rtl;
+            color: var(--accent-color);
+        }
+
+        .ayah-meta {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-top: var(--spacing-unit);
+            text-align: right;
+        }
+
+        .ayah-controls {
+            position: absolute;
+            top: var(--spacing-unit);
+            left: var(--spacing-unit);
+            display: flex;
+            gap: var(--spacing-unit);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .ayah:hover .ayah-controls {
+            opacity: 1;
+        }
+
+
+        .ayah-controls button {
+            background: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            cursor: pointer;
+            padding: calc(var(--spacing-unit) / 2) var(--spacing-unit);
+            font-size: 0.8rem;
+            border-radius: 4px;
+        }
+         .ayah-controls button.bookmarked {
+             color: var(--primary-color);
+             border-color: var(--primary-color);
+         }
+
+        .search-highlight {
+            background-color: var(--highlight-color);
+            color: #000;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-unit) 0;
+            margin-top: calc(var(--spacing-unit) * 2);
+        }
+
+        .pagination-controls button, .lines-per-page select {
+             background: var(--secondary-color);
+             border: 1px solid var(--border-color);
+             color: var(--text-color);
+             cursor: pointer;
+             padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5);
+             font-size: 0.9rem;
+             border-radius: 4px;
+        }
+        .lines-per-page label {
+            margin-right: var(--spacing-unit);
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px; /* Start off-screen */
+            width: 350px;
+            max-width: 90%;
+            background-color: var(--secondary-color);
+            z-index: 100;
+            transition: right 0.3s ease;
+            border-left: 1px solid var(--border-color);
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-panel h2 {
+            margin-bottom: calc(var(--spacing-unit) * 2);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: var(--spacing-unit);
+            color: var(--primary-color);
+        }
+
+        .setting-group {
+            margin-bottom: calc(var(--spacing-unit) * 2.5);
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: var(--spacing-unit);
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        .setting-group input[type="range"],
+        .setting-group select,
+        .setting-group input[type="checkbox"],
+        .setting-group input[type="datetime-local"],
+        .setting-group input[type="text"],
+        .setting-group button {
+            width: 100%;
+            padding: var(--spacing-unit);
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            margin-bottom: var(--spacing-unit);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+         .setting-group input[type="checkbox"] {
+             width: auto;
+             margin-right: var(--spacing-unit);
+         }
+         .setting-group .checkbox-label {
+             display: inline-flex;
+             align-items: center;
+             margin-right: calc(var(--spacing-unit) * 2);
+         }
+
+        .setting-group button {
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+        .setting-group button:hover {
+             background-color: #00b36e;
+        }
+         .setting-group button.secondary {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+        }
+         .setting-group button.secondary:hover {
+            background-color: #616161;
+         }
+
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+            font-size: 1.2rem;
+        }
+        #loading-progress {
+            width: 80%;
+            height: 20px;
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: var(--spacing-unit);
+        }
+        #loading-progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: var(--primary-color);
+            transition: width 0.1s ease-out;
+        }
+
+        .history-log ul, .reporting-view ul {
+            list-style: none;
+            padding-left: 0;
+         }
+        .history-log li, .reporting-view li {
+            margin-bottom: var(--spacing-unit);
+            font-size: 0.9rem;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: var(--spacing-unit);
+         }
+         .history-log span, .reporting-view span {
+             color: var(--text-color);
+             margin-left: var(--spacing-unit);
+         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: var(--secondary-color);
+            margin: auto;
+            padding: calc(var(--spacing-unit) * 3);
+            border: 1px solid var(--border-color);
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            color: var(--text-color);
+        }
+        .modal-close {
+            color: var(--accent-color);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        .modal p {
+            margin-bottom: var(--spacing-unit);
+        }
+
+        .fullscreen {
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             z-index: 1000;
+             background-color: var(--bg-color);
+             overflow-y: auto;
+             padding: var(--spacing-unit);
+        }
+         .fullscreen .content-panel {
+             padding: 0; /* Remove padding in fullscreen */
+         }
+        .fullscreen .ayah {
+             border: none; /* Optional: remove borders in fullscreen */
+         }
+        .fullscreen-controls {
+             position: absolute;
+             top: 10px;
+             right: 10px;
+             z-index: 1001;
+         }
+        .fullscreen-controls button {
+             background: rgba(0, 0, 0, 0.5);
+             color: white;
+             border: none;
+             padding: 10px;
+             font-size: 1.5rem;
+             cursor: pointer;
+             border-radius: 50%;
+         }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .nav-panel {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 99;
+                box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+                margin-left: 0; /* Reset margin */
+            }
+            .nav-panel.open {
+                transform: translateX(0);
+            }
+            .app-main {
+                flex-direction: column;
+            }
+            .content-panel {
+                 width: 100%;
+             }
+
+            .settings-panel {
+                width: 85%;
+                right: -100%;
+             }
+             .settings-panel.open {
+                right: 0;
+             }
+
+             .app-header h1 { font-size: 1.2rem; }
+             .header-controls button { font-size: 1.3rem; padding: calc(var(--spacing-unit) / 2); }
+             :root {
+                 --font-size-arabic: 1.6rem;
+                 --font-size-translation: 0.9rem;
+             }
+             .ayah-controls { opacity: 1; position: static; margin-top: var(--spacing-unit); justify-content: flex-end;}
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .nav-panel::-webkit-scrollbar, .content-panel::-webkit-scrollbar, .settings-panel::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .nav-panel, .content-panel, .settings-panel {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+section#content-panel {
+    background: #00ffd0;
+    color: #1000ff;
+}
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <div id="loading-message">Initializing Quran Data...</div>
+        <div id="loading-progress"><div id="loading-progress-bar"></div></div>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <button id="menu-toggle" class="menu-toggle">☰</button>
+            <h1 id="app-title">Quran App</h1>
+            <div class="header-controls">
+                <input type="search" id="search-input" placeholder="Search Quran..." aria-label="Search Quran">
+                <button id="search-button">🔍</button>
+                <button id="settings-toggle">⚙️</button>
+                <button id="fullscreen-toggle">⛶</button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <nav class="nav-panel" id="nav-panel">
+                <h2>Surahs</h2>
+                <ul id="surah-list"></ul>
+            </nav>
+            <section class="content-panel" id="content-panel">
+                <div id="ayah-display">
+                    </div>
+                <div id="pagination-controls" class="pagination-controls" style="display: none;">
+                    <button id="prev-page">Previous</button>
+                    <div class="lines-per-page">
+                        <label for="lines-per-page-select">Ayahs/Page:</label>
+                        <select id="lines-per-page-select">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                            <option value="0">All</option>
+                        </select>
+                    </div>
+                    <button id="next-page">Next</button>
+                </div>
+                 <div id="search-results-info" style="display: none; margin-bottom: var(--spacing-unit);"></div>
+            </section>
+        </main>
+
+        <aside class="settings-panel" id="settings-panel">
+            <h2>Settings</h2>
+            <button class="modal-close" style="position:absolute; top:10px; right:10px;" onclick="document.getElementById('settings-panel').classList.remove('open');">&times;</button>
+
+            <div class="setting-group">
+                <label for="theme-select">Theme</label>
+                <select id="theme-select">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                 <label for="font-size-slider">Base Font Size: <span id="font-size-value">16px</span></label>
+                 <input type="range" id="font-size-slider" min="12" max="24" step="1" value="16">
+            </div>
+             <div class="setting-group">
+                 <label for="arabic-font-size-slider">Arabic Font Size: <span id="arabic-font-size-value">1.8rem</span></label>
+                 <input type="range" id="arabic-font-size-slider" min="1.2" max="3.0" step="0.1" value="1.8">
+            </div>
+             <div class="setting-group">
+                 <label for="translation-font-size-slider">Translation Font Size: <span id="translation-font-size-value">1rem</span></label>
+                 <input type="range" id="translation-font-size-slider" min="0.7" max="1.8" step="0.1" value="1.0">
+            </div>
+
+             <div class="setting-group">
+                <label>Content Visibility</label>
+                 <div class="checkbox-label"><input type="checkbox" id="show-arabic" checked> Show Arabic</div>
+                 <div class="checkbox-label"><input type="checkbox" id="show-translation" checked> Show Translation</div>
+            </div>
+
+            <div class="setting-group">
+                 <label>Reading Mode</label>
+                 <select id="reading-mode-select">
+                    <option value="paginated">Paginated</option>
+                    <option value="ayah-by-ayah">Ayah-by-Ayah</option>
+                    <option value="continuous">Continuous Scroll</option>
+                 </select>
+            </div>
+
+             <div class="setting-group">
+                 <label>Backup & Restore</label>
+                 <button id="export-data-button">Export Data</button>
+                 <input type="file" id="import-data-input" accept=".json" style="display: none;">
+                 <button id="import-data-button" class="secondary">Import Data</button>
+                 <p id="import-status" style="font-size: 0.8rem; margin-top: 5px;"></p>
+             </div>
+
+             <div class="setting-group">
+                 <label>Reminders</label>
+                 <button id="set-reminder-button">Set Reading Reminder</button>
+                 <input type="datetime-local" id="reminder-time">
+                 <button id="clear-reminders-button" class="secondary">Clear All Reminders</button>
+                 <ul id="reminder-list"></ul>
+             </div>
+              <div class="setting-group">
+                 <label>Custom Ayah Alerts</label>
+                 <input type="text" id="alert-ayah-ref" placeholder="e.g., 2:255">
+                 <input type="text" id="alert-message" placeholder="Alert message">
+                 <button id="set-alert-button">Set Alert for Ayah</button>
+                  <ul id="custom-alert-list"></ul>
+             </div>
+
+             <div class="setting-group">
+                 <label>Reading History & Progress</label>
+                 <button id="view-history-button">View History Log</button>
+                 <button id="view-reporting-button">View Progress Report</button>
+             </div>
+
+        </aside>
+
+    </div>
+
+    <div id="history-modal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" onclick="document.getElementById('history-modal').style.display='none'">&times;</span>
+        <h3>Reading History Log</h3>
+        <div id="history-log-content" class="history-log"></div>
+      </div>
+    </div>
+
+    <div id="reporting-modal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" onclick="document.getElementById('reporting-modal').style.display='none'">&times;</span>
+        <h3>Reading Progress Report</h3>
+        <div id="reporting-view-content" class="reporting-view"></div>
+      </div>
+    </div>
+
+
+    <script>
+        const DB_NAME = 'quranDB';
+        const DB_VERSION = 1;
+        const AYAH_STORE = 'ayahs';
+        const META_STORE = 'metadata'; // For bookmarks, progress, settings, history etc.
+        const DATA_LOADED_KEY = 'quranDataLoaded';
+        const LAST_READ_KEY = 'lastReadPosition';
+        const BOOKMARKS_KEY = 'bookmarks';
+        const SETTINGS_KEY = 'userSettings';
+        const HISTORY_KEY = 'readingHistory';
+        const REMINDERS_KEY = 'reminders';
+        const ALERTS_KEY = 'customAlerts';
+        const DATA_FILE_PATH = 'data/data.AM'; // Relative path to the data file
+
+        let db;
+        let currentSurah = 1;
+        let currentPage = 1;
+        let linesPerPage = 10;
+        let currentAyahs = [];
+        let totalPages = 1;
+        let currentMode = 'paginated'; // 'paginated', 'ayah-by-ayah', 'continuous'
+        let currentSearchResults = [];
+        let isSearchActive = false;
+        let surahMeta = {}; // Store Surah names, ayah counts etc.
+        let userSettings = {};
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingMessage = document.getElementById('loading-message');
+        const loadingProgressBar = document.getElementById('loading-progress-bar');
+        const surahListEl = document.getElementById('surah-list');
+        const ayahDisplayEl = document.getElementById('ayah-display');
+        const paginationControlsEl = document.getElementById('pagination-controls');
+        const prevPageBtn = document.getElementById('prev-page');
+        const nextPageBtn = document.getElementById('next-page');
+        const linesPerPageSelect = document.getElementById('lines-per-page-select');
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsToggle = document.getElementById('settings-toggle');
+        const themeSelect = document.getElementById('theme-select');
+        const fontSizeSlider = document.getElementById('font-size-slider');
+        const arabicFontSizeSlider = document.getElementById('arabic-font-size-slider');
+        const translationFontSizeSlider = document.getElementById('translation-font-size-slider');
+        const fontSizeValue = document.getElementById('font-size-value');
+        const arabicFontSizeValue = document.getElementById('arabic-font-size-value');
+        const translationFontSizeValue = document.getElementById('translation-font-size-value');
+        const showArabicCheckbox = document.getElementById('show-arabic');
+        const showTranslationCheckbox = document.getElementById('show-translation');
+        const readingModeSelect = document.getElementById('reading-mode-select');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const searchResultsInfoEl = document.getElementById('search-results-info');
+        const menuToggle = document.getElementById('menu-toggle');
+        const navPanel = document.getElementById('nav-panel');
+        const contentPanel = document.getElementById('content-panel');
+        const appContainer = document.querySelector('.app-container');
+        const fullscreenToggle = document.getElementById('fullscreen-toggle');
+        const exportDataButton = document.getElementById('export-data-button');
+        const importDataButton = document.getElementById('import-data-button');
+        const importDataInput = document.getElementById('import-data-input');
+        const importStatusEl = document.getElementById('import-status');
+        const setReminderButton = document.getElementById('set-reminder-button');
+        const reminderTimeInput = document.getElementById('reminder-time');
+        const reminderListEl = document.getElementById('reminder-list');
+        const clearRemindersButton = document.getElementById('clear-reminders-button');
+        const setAlertButton = document.getElementById('set-alert-button');
+        const alertAyahRefInput = document.getElementById('alert-ayah-ref');
+        const alertMessageInput = document.getElementById('alert-message');
+        const customAlertListEl = document.getElementById('custom-alert-list');
+        const viewHistoryButton = document.getElementById('view-history-button');
+        const viewReportingButton = document.getElementById('view-reporting-button');
+        const historyModal = document.getElementById('history-modal');
+        const reportingModal = document.getElementById('reporting-modal');
+        const historyLogContent = document.getElementById('history-log-content');
+        const reportingViewContent = document.getElementById('reporting-view-content');
+
+        // --- IndexedDB Functions ---
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains(AYAH_STORE)) {
+                        const ayahStore = db.createObjectStore(AYAH_STORE, { keyPath: 'id', autoIncrement: true });
+                        ayahStore.createIndex('surah_ayah', ['surah', 'ayah'], { unique: true });
+                        ayahStore.createIndex('surah', 'surah', { unique: false });
+                        ayahStore.createIndex('arabic_text', 'arabic', { unique: false });
+                        ayahStore.createIndex('translation_text', 'translation', { unique: false });
+                        ayahStore.createIndex('text_tokens', 'tokens', { unique: false, multiEntry: true });
+                    }
+                     if (!db.objectStoreNames.contains(META_STORE)) {
+                         const metaStore = db.createObjectStore(META_STORE, { keyPath: 'key' });
+                     }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log("Database opened successfully");
+                    resolve(db);
+                };
+
+                request.onerror = (event) => {
+                    console.error("Database error:", event.target.errorCode);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        function getMetaData(key) {
+            return new Promise((resolve, reject) => {
+                if (!db) { return reject("DB not open"); }
+                const transaction = db.transaction(META_STORE, 'readonly');
+                const store = transaction.objectStore(META_STORE);
+                const request = store.get(key);
+                request.onsuccess = (event) => resolve(event.target.result ? event.target.result.value : undefined);
+                request.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        function setMetaData(key, value) {
+             return new Promise((resolve, reject) => {
+                 if (!db) { return reject("DB not open"); }
+                const transaction = db.transaction(META_STORE, 'readwrite');
+                const store = transaction.objectStore(META_STORE);
+                const request = store.put({ key: key, value: value });
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        function clearStore(storeName) {
+             return new Promise((resolve, reject) => {
+                 if (!db) { return reject("DB not open"); }
+                const transaction = db.transaction(storeName, 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject(event.target.error);
+            });
+        }
+
+        function addAyahBatch(ayahs) {
+            return new Promise((resolve, reject) => {
+                if (!db) { return reject("DB not open"); }
+                const transaction = db.transaction(AYAH_STORE, 'readwrite');
+                const store = transaction.objectStore(AYAH_STORE);
+                let count = 0;
+
+                ayahs.forEach(ayah => {
+                     const request = store.add(ayah);
+                     request.onsuccess = () => {
+                         count++;
+                         if (count === ayahs.length) {
+                            // Batch finished
+                         }
+                     };
+                     request.onerror = (event) => {
+                         console.warn("Error adding ayah (likely duplicate sura:ayah):", ayah, event.target.error);
+                         // Continue adding others even if one fails (e.g., duplicate)
+                         count++;
+                         if (count === ayahs.length) {
+                            // Batch finished (with potential errors)
+                         }
+                     };
+                });
+
+                transaction.oncomplete = () => {
+                    console.log(`Batch of ${ayahs.length} ayahs committed.`);
+                    resolve();
+                };
+                transaction.onerror = (event) => {
+                     console.error("Transaction error adding ayah batch:", event.target.error);
+                     reject(event.target.error);
+                };
+             });
+        }
+
+
+        // --- Data Loading and Parsing ---
+
+        async function loadAndStoreData() {
+            loadingMessage.textContent = `Workspaceing data from ${DATA_FILE_PATH}...`;
+            loadingProgressBar.style.width = '5%';
+            try {
+                const response = await fetch(DATA_FILE_PATH);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}. Ensure '${DATA_FILE_PATH}' exists.`);
+                }
+                const text = await response.text();
+                loadingMessage.textContent = 'Parsing data...';
+                loadingProgressBar.style.width = '20%';
+
+                const lines = text.trim().split('\n');
+                const totalLines = lines.length;
+                let ayahs = [];
+                const batchSize = 500; // Process in batches
+
+                for (let i = 0; i < totalLines; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const match = line.match(/^(.*?) ترجمہ: (.*?)(س (\d+) آ (\d+))$/);
+                    if (match) {
+                        const arabic = match[1].trim();
+                        const translation = match[2].trim();
+                        const surah = parseInt(match[4], 10);
+                        const ayah = parseInt(match[5], 10);
+
+                        // Basic tokenization for search (split by space, remove punctuation)
+                        const normalize = (str) => str.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟۔،]/g,"").replace(/\s+/g, ' ').trim();
+                        const arabicTokens = normalize(arabic).split(' ');
+                        const translationTokens = normalize(translation).split(' ');
+
+                        ayahs.push({
+                            surah: surah,
+                            ayah: ayah,
+                            arabic: arabic,
+                            translation: translation,
+                            tokens: [...new Set([...arabicTokens, ...translationTokens].filter(t => t.length > 1))] // Unique tokens > 1 char
+                        });
+
+                         // Update Surah Metadata (naive approach during parse)
+                         if (!surahMeta[surah]) {
+                            surahMeta[surah] = { ayahCount: 0, name: `Surah ${surah}` }; // Placeholder name
+                         }
+                         surahMeta[surah].ayahCount = Math.max(surahMeta[surah].ayahCount, ayah);
+
+                        if (ayahs.length >= batchSize || i === totalLines - 1) {
+                             loadingMessage.textContent = `Storing Ayahs ${i + 1}/${totalLines}...`;
+                             await addAyahBatch(ayahs);
+                             ayahs = []; // Clear batch
+                             loadingProgressBar.style.width = `${20 + (i / totalLines) * 75}%`;
+                        }
+                    } else {
+                        console.warn(`Could not parse line ${i + 1}: ${line}`);
+                    }
+                }
+
+                 // Refine Surah names if possible (e.g., from a known list or first ayah)
+                 // Placeholder: Just use number for now
+                Object.keys(surahMeta).forEach(sNum => {
+                    surahMeta[sNum].name = getSurahName(parseInt(sNum)); // Use helper
+                });
+
+                await setMetaData(DATA_LOADED_KEY, true);
+                await setMetaData('surahMetadata', surahMeta); // Store metadata
+                loadingMessage.textContent = 'Data loaded successfully!';
+                loadingProgressBar.style.width = '100%';
+                setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
+                logHistory('Data Initialized', `Loaded ${totalLines} lines.`);
+                return true;
+            } catch (error) {
+                console.error("Error loading or parsing data:", error);
+                loadingMessage.textContent = `Error: ${error.message}. Please check console.`;
+                loadingProgressBar.style.backgroundColor = 'red';
+                alert(`Failed to load Quran data: ${error.message}. Ensure the file '${DATA_FILE_PATH}' is accessible.`);
+                return false;
+            }
+        }
+
+        // --- Surah Info ---
+        // Basic Surah names - extend this as needed
+        const surahNames = {
+            1: { name_ar: "ٱلْفَاتِحَةِ", name_en: "Al-Fatiha" }, 2: { name_ar: "البَقَرَةِ", name_en: "Al-Baqarah" },
+            3: { name_ar: "آلِ عِمۡرٰنَ", name_en: "Aal-i-Imraan" }, 4: { name_ar: "النِّسَاءِ", name_en: "An-Nisaa" },
+            5: { name_ar: "المَائـِدَةِ", name_en: "Al-Maaida" }, 6: { name_ar: "الأَنۡعَامِ", name_en: "Al-An'aam" },
+            7: { name_ar: "الأَعۡرَافِ", name_en: "Al-A'raaf" }, 8: { name_ar: "الأَنفَالِ", name_en: "Al-Anfaal" },
+            9: { name_ar: "التَّوۡبَةِ", name_en: "At-Tawba" }, 10: { name_ar: "يُونُسَ", name_en: "Yunus" },
+            11: { name_ar: "هُودٍ", name_en: "Hud" }, 12: { name_ar: "يُوسُفَ", name_en: "Yusuf" },
+            13: { name_ar: "الرَّعۡدِ", name_en: "Ar-Ra'd" }, 14: { name_ar: "إِبۡرَاهِيمَ", name_en: "Ibrahim" },
+            15: { name_ar: "الحِجۡرِ", name_en: "Al-Hijr" }, 16: { name_ar: "النَّحۡلِ", name_en: "An-Nahl" },
+            17: { name_ar: "الإِسۡرَاءِ", name_en: "Al-Israa" }, 18: { name_ar: "الكَهۡفِ", name_en: "Al-Kahf" },
+            19: { name_ar: "مَرۡيَمَ", name_en: "Maryam" }, 20: { name_ar: "طه", name_en: "Taa-Haa" },
+            21: { name_ar: "الأَنبِيَاءِ", name_en: "Al-Anbiyaa" }, 22: { name_ar: "الحَجِّ", name_en: "Al-Hajj" },
+            23: { name_ar: "المُؤۡمِنُونَ", name_en: "Al-Muminoon" }, 24: { name_ar: "النُّورِ", name_en: "An-Noor" },
+            25: { name_ar: "الفُرۡقَانِ", name_en: "Al-Furqaan" }, 26: { name_ar: "الشُّعَرَاءِ", name_en: "Ash-Shu'araa" },
+            27: { name_ar: "النَّمۡلِ", name_en: "An-Naml" }, 28: { name_ar: "القَصَصِ", name_en: "Al-Qasas" },
+            29: { name_ar: "العَنكَبُوتِ", name_en: "Al-Ankaboot" }, 30: { name_ar: "الرُّومِ", name_en: "Ar-Room" },
+            31: { name_ar: "لُقۡمَانَ", name_en: "Luqman" }, 32: { name_ar: "السَّجۡدَةِ", name_en: "As-Sajda" },
+            33: { name_ar: "الأَحۡزَابِ", name_en: "Al-Ahzaab" }, 34: { name_ar: "سَبَإٍ", name_en: "Saba" },
+            35: { name_ar: "فَاطِرٍ", name_en: "Faatir" }, 36: { name_ar: "يسٓ", name_en: "Yaseen" },
+            37: { name_ar: "الصَّافَّاتِ", name_en: "As-Saaffaat" }, 38: { name_ar: "صٓ", name_en: "Saad" },
+            39: { name_ar: "الزُّمَرِ", name_en: "Az-Zumar" }, 40: { name_ar: "غَافِرٍ", name_en: "Ghafir" },
+            41: { name_ar: "فُصِّلَتۡ", name_en: "Fussilat" }, 42: { name_ar: "الشُّورَىٰ", name_en: "Ash-Shura" },
+            43: { name_ar: "الزُّخۡرُفِ", name_en: "Az-Zukhruf" }, 44: { name_ar: "الدُّخَانِ", name_en: "Ad-Dukhaan" },
+            45: { name_ar: "الجَاثِيَةِ", name_en: "Al-Jaathiya" }, 46: { name_ar: "الأَحۡقَافِ", name_en: "Al-Ahqaf" },
+            47: { name_ar: "مُحَمَّدٍ", name_en: "Muhammad" }, 48: { name_ar: "الفَتۡحِ", name_en: "Al-Fath" },
+            49: { name_ar: "الحُجُرَاتِ", name_en: "Al-Hujuraat" }, 50: { name_ar: "قٓ", name_en: "Qaaf" },
+            51: { name_ar: "الذَّارِيَاتِ", name_en: "Adh-Dhaariyat" }, 52: { name_ar: "الطُّورِ", name_en: "At-Tur" },
+            53: { name_ar: "النَّجۡمِ", name_en: "An-Najm" }, 54: { name_ar: "القَمَرِ", name_en: "Al-Qamar" },
+            55: { name_ar: "الرَّحۡمَٰن", name_en: "Ar-Rahmaan" }, 56: { name_ar: "الوَاقِعَةِ", name_en: "Al-Waaqia" },
+            57: { name_ar: "الحَدِيدِ", name_en: "Al-Hadid" }, 58: { name_ar: "المُجَادلَةِ", name_en: "Al-Mujaadila" },
+            59: { name_ar: "الحَشۡرِ", name_en: "Al-Hashr" }, 60: { name_ar: "المُمۡتَحنَةِ", name_en: "Al-Mumtahana" },
+            61: { name_ar: "الصَّفِّ", name_en: "As-Saff" }, 62: { name_ar: "الجُمُعَةِ", name_en: "Al-Jumu'a" },
+            63: { name_ar: "المُنَافِقُونَ", name_en: "Al-Munaafiqoon" }, 64: { name_ar: "التَّغَابُنِ", name_en: "At-Taghaabun" },
+            65: { name_ar: "الطَّلَاقِ", name_en: "At-Talaaq" }, 66: { name_ar: "التَّحۡرِيمِ", name_en: "At-Tahrim" },
+            67: { name_ar: "المُلۡكِ", name_en: "Al-Mulk" }, 68: { name_ar: "القَلَمِ", name_en: "Al-Qalam" },
+            69: { name_ar: "الحَاقَّةِ", name_en: "Al-Haaqqa" }, 70: { name_ar: "المَعَارِجِ", name_en: "Al-Ma'aarij" },
+            71: { name_ar: "نُوحٍ", name_en: "Nooh" }, 72: { name_ar: "الجِنِّ", name_en: "Al-Jinn" },
+            73: { name_ar: "المُزَّمِّلِ", name_en: "Al-Muzzammil" }, 74: { name_ar: "المُدَّثِّرِ", name_en: "Al-Muddaththir" },
+            75: { name_ar: "القِيَامَةِ", name_en: "Al-Qiyaama" }, 76: { name_ar: "الإِنسَانِ", name_en: "Al-Insaan" },
+            77: { name_ar: "المُرۡسَلَاتِ", name_en: "Al-Mursalaat" }, 78: { name_ar: "النَّبَإِ", name_en: "An-Naba" },
+            79: { name_ar: "النَّازِعَاتِ", name_en: "An-Naazi'aat" }, 80: { name_ar: "عَبَسَ", name_en: "Abasa" },
+            81: { name_ar: "التَّكۡوِيرِ", name_en: "At-Takwir" }, 82: { name_ar: "الانفِطَارِ", name_en: "Al-Infitaar" },
+            83: { name_ar: "المُطَفِّفِينَ", name_en: "Al-Mutaffifin" }, 84: { name_ar: "الانشِقَاقِ", name_en: "Al-Inshiqaaq" },
+            85: { name_ar: "البُرُوجِ", name_en: "Al-Burooj" }, 86: { name_ar: "الطَّارِقِ", name_en: "At-Taariq" },
+            87: { name_ar: "الأَعۡلَىٰ", name_en: "Al-A'laa" }, 88: { name_ar: "الغَاشِيَةِ", name_en: "Al-Ghaashiya" },
+            89: { name_ar: "الفَجۡرِ", name_en: "Al-Fajr" }, 90: { name_ar: "البَلَدِ", name_en: "Al-Balad" },
+            91: { name_ar: "الشَّمۡسِ", name_en: "Ash-Shams" }, 92: { name_ar: "اللَّيۡلِ", name_en: "Al-Lail" },
+            93: { name_ar: "الضُّحَىٰ", name_en: "Ad-Dhuhaa" }, 94: { name_ar: "الشَّرۡحِ", name_en: "Ash-Sharh" },
+            95: { name_ar: "التِّينِ", name_en: "At-Tin" }, 96: { name_ar: "العَلَقِ", name_en: "Al-Alaq" },
+            97: { name_ar: "القَدۡرِ", name_en: "Al-Qadr" }, 98: { name_ar: "البَيِّنَةِ", name_en: "Al-Bayyina" },
+            99: { name_ar: "الزَّلۡزَلَةِ", name_en: "Az-Zalzala" }, 100: { name_ar: "العَادِيَاتِ", name_en: "Al-Aadiyaat" },
+            101: { name_ar: "القَارِعَةِ", name_en: "Al-Qaari'a" }, 102: { name_ar: "التَّكَاثُرِ", name_en: "At-Takaathur" },
+            103: { name_ar: "العَصۡرِ", name_en: "Al-Asr" }, 104: { name_ar: "الهُمَزَةِ", name_en: "Al-Humaza" },
+            105: { name_ar: "الفِيلِ", name_en: "Al-Fil" }, 106: { name_ar: "قُرَيۡشٍ", name_en: "Quraish" },
+            107: { name_ar: "المَاعُونِ", name_en: "Al-Maa'un" }, 108: { name_ar: "الكَوۡثَرِ", name_en: "Al-Kawthar" },
+            109: { name_ar: "الكَافِرُونَ", name_en: "Al-Kaafiroon" }, 110: { name_ar: "النَّصۡرِ", name_en: "An-Nasr" },
+            111: { name_ar: "المَسَدِ", name_en: "Al-Masad" }, 112: { name_ar: "الإِخۡلَاصِ", name_en: "Al-Ikhlaas" },
+            113: { name_ar: "الْفَلَقِ", name_en: "Al-Falaq" }, 114: { name_ar: "النَّاسِ", name_en: "An-Naas" }
+        };
+
+        function getSurahName(surahNumber, lang = 'ar') {
+            const info = surahNames[surahNumber];
+            if (!info) return `Surah ${surahNumber}`;
+            return lang === 'ar' ? info.name_ar : info.name_en;
+        }
+
+
+        // --- UI Rendering ---
+
+        function populateSurahList() {
+            surahListEl.innerHTML = ''; // Clear existing list
+             if (!surahMeta || Object.keys(surahMeta).length === 0) {
+                console.warn("Surah metadata not loaded yet for list population.");
+                return; // Wait for metadata
+            }
+            const sortedSurahNumbers = Object.keys(surahMeta).map(Number).sort((a, b) => a - b);
+
+            sortedSurahNumbers.forEach(sNum => {
+                 const meta = surahMeta[sNum];
+                 const li = document.createElement('li');
+                 li.dataset.surah = sNum;
+                 li.innerHTML = `
+                     <span class="surah-details">
+                        <span class="surah-number">${sNum}.</span>
+                        ${meta.name ? meta.name.name_en || `Surah ${sNum}` : `Surah ${sNum}`}
+                        <span class="surah-name-ar">${meta.name ? meta.name.name_ar || '' : ''}</span>
+                     </span>
+                     <span class="ayah-count">${meta.ayahCount || '?'} Ayahs</span>
+                 `;
+                 li.onclick = () => {
+                     loadSurah(sNum);
+                     // Close nav panel on mobile after selection
+                     if (window.innerWidth <= 768) {
+                         navPanel.classList.remove('open');
+                     }
+                 };
+                 surahListEl.appendChild(li);
+             });
+             highlightActiveSurah();
+        }
+
+        function highlightActiveSurah() {
+             const currentActive = surahListEl.querySelector('li.active');
+             if (currentActive) currentActive.classList.remove('active');
+             const newActive = surahListEl.querySelector(`li[data-surah="${currentSurah}"]`);
+             if (newActive) newActive.classList.add('active');
+             document.getElementById('app-title').textContent = `Surah ${getSurahName(currentSurah, 'en')} (${currentSurah})`;
+         }
+
+         function highlightText(text, searchTerm) {
+             if (!searchTerm || !text) return text;
+             try {
+                const regex = new RegExp(`(${searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+                 return text.replace(regex, '<span class="search-highlight">$1</span>');
+             } catch (e) {
+                 console.warn("Regex error during highlighting:", e);
+                 return text; // Return original text if regex fails
+             }
+         }
+
+        async function renderAyahs(ayahsToRender, searchTerm = '') {
+            ayahDisplayEl.innerHTML = ''; // Clear previous ayahs
+            const fragment = document.createDocumentFragment();
+            const bookmarks = await getMetaData(BOOKMARKS_KEY) || {};
+
+            if (ayahsToRender.length === 0 && !isSearchActive) {
+                 ayahDisplayEl.innerHTML = '<p>Select a Surah to display Ayahs.</p>';
+                 return;
+            }
+            if (ayahsToRender.length === 0 && isSearchActive) {
+                 ayahDisplayEl.innerHTML = '<p>No results found for your search.</p>';
+                 return;
+            }
+
+
+            ayahsToRender.forEach(ayah => {
+                const div = document.createElement('div');
+                div.classList.add('ayah');
+                div.dataset.surah = ayah.surah;
+                div.dataset.ayah = ayah.ayah;
+                div.id = `s${ayah.surah}a${ayah.ayah}`; // ID for direct linking/scrolling
+
+                const ayahRef = `${ayah.surah}:${ayah.ayah}`;
+                const isBookmarked = bookmarks[ayahRef];
+
+                let arabicHtml = '', translationHtml = '';
+
+                 if (userSettings.showArabic) {
+                     arabicHtml = `<div class="ayah-arabic" lang="ar" dir="rtl">${highlightText(ayah.arabic, isSearchActive ? searchTerm : '')}</div>`;
+                 }
+                 if (userSettings.showTranslation) {
+                     translationHtml = `<div class="ayah-translation" lang="ur" dir="rtl">${highlightText(ayah.translation, isSearchActive ? searchTerm : '')}</div>`;
+                 }
+
+
+                div.innerHTML = `
+                    ${arabicHtml}
+                    ${translationHtml}
+                    <div class="ayah-meta">${ayahRef}</div>
+                    <div class="ayah-controls">
+                        <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" data-ref="${ayahRef}">${isBookmarked ? 'Bookmarked ★' : 'Bookmark ☆'}</button>
+                        <button class="share-btn" data-ref="${ayahRef}">Share</button>
+                         <button class="alert-ayah-btn" data-ref="${ayahRef}">Set Alert</button>
+                    </div>
+                `;
+                fragment.appendChild(div);
+            });
+
+            ayahDisplayEl.appendChild(fragment);
+             attachAyahEventListeners();
+             applyContentVisibility(); // Re-apply visibility based on settings
+             applyFontSizes(); // Re-apply font sizes
+        }
+
+        function attachAyahEventListeners() {
+            ayahDisplayEl.querySelectorAll('.bookmark-btn').forEach(btn => {
+                btn.onclick = (e) => toggleBookmark(e.target.dataset.ref, e.target);
+            });
+             ayahDisplayEl.querySelectorAll('.share-btn').forEach(btn => {
+                btn.onclick = (e) => shareAyah(e.target.dataset.ref);
+            });
+            ayahDisplayEl.querySelectorAll('.alert-ayah-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const ref = e.target.dataset.ref;
+                    alertAyahRefInput.value = ref;
+                    alertMessageInput.focus();
+                    settingsPanel.classList.add('open'); // Open settings to show alert fields
+                };
+            });
+
+            // Read Tracking - Intersection Observer
+             if ('IntersectionObserver' in window && currentMode !== 'ayah-by-ayah') {
+                 const observer = new IntersectionObserver(handleAyahIntersection, {
+                     root: currentMode === 'paginated' ? contentPanel : null, // Observe within content panel for pagination
+                     rootMargin: '0px 0px -40% 0px', // Trigger when ayah is near the top
+                     threshold: 0.1
+                 });
+                 ayahDisplayEl.querySelectorAll('.ayah').forEach(el => observer.observe(el));
+             }
+         }
+
+         function handleAyahIntersection(entries, observer) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                     const surah = entry.target.dataset.surah;
+                     const ayah = entry.target.dataset.ayah;
+                     if (surah && ayah) {
+                        updateLastRead(parseInt(surah), parseInt(ayah), false); // Update without immediate save if scrolling fast
+                     }
+                     // Optional: Unobserve Ayahs once read/passed to save resources?
+                     // observer.unobserve(entry.target);
+                }
+            });
+            // Debounce saving the very last read position
+            clearTimeout(window.saveLastReadTimeout);
+            window.saveLastReadTimeout = setTimeout(() => {
+                const lastVisible = Array.from(entries).filter(e=>e.isIntersecting).pop();
+                if (lastVisible) {
+                    const surah = lastVisible.target.dataset.surah;
+                    const ayah = lastVisible.target.dataset.ayah;
+                    if(surah && ayah) updateLastRead(parseInt(surah), parseInt(ayah), true); // Force save last visible
+                }
+            }, 500); // Save after 500ms of inactivity
+         }
+
+        function updatePaginationControls() {
+             if (currentMode !== 'paginated' || isSearchActive || linesPerPage === 0) {
+                 paginationControlsEl.style.display = 'none';
+                 return;
+             }
+             paginationControlsEl.style.display = 'flex';
+             prevPageBtn.disabled = currentPage <= 1;
+             nextPageBtn.disabled = currentPage >= totalPages;
+             linesPerPageSelect.value = linesPerPage;
+         }
+
+
+        // --- Core Logic ---
+
+        async function loadSurah(surahNumber, targetAyah = 1) {
+            console.log(`Loading Surah ${surahNumber}, targeting Ayah ${targetAyah}`);
+            isSearchActive = false; // Exit search mode
+             searchResultsInfoEl.style.display = 'none';
+             searchInput.value = ''; // Clear search input
+            if (!db) {
+                console.error("DB not ready for loading surah");
+                return;
+            }
+            currentSurah = surahNumber;
+            highlightActiveSurah();
+
+            const transaction = db.transaction(AYAH_STORE, 'readonly');
+            const store = transaction.objectStore(AYAH_STORE);
+            const index = store.index('surah');
+            const request = index.getAll(IDBKeyRange.only(currentSurah));
+
+            request.onsuccess = (event) => {
+                currentAyahs = event.target.result.sort((a, b) => a.ayah - b.ayah); // Ensure sorted
+                const totalAyahs = currentAyahs.length;
+
+                if (totalAyahs === 0) {
+                    console.warn(`No ayahs found in DB for Surah ${currentSurah}`);
+                    ayahDisplayEl.innerHTML = `<p>Could not load Ayahs for Surah ${currentSurah}. Data might be missing or corrupted.</p>`;
+                    paginationControlsEl.style.display = 'none';
+                    return;
+                }
+
+                if (currentMode === 'paginated' && linesPerPage > 0) {
+                     totalPages = Math.ceil(totalAyahs / linesPerPage);
+                     // Find the page containing the targetAyah
+                     currentPage = Math.ceil(targetAyah / linesPerPage);
+                     currentPage = Math.max(1, Math.min(currentPage, totalPages)); // Clamp page number
+                     const startIndex = (currentPage - 1) * linesPerPage;
+                     const endIndex = startIndex + linesPerPage;
+                     renderAyahs(currentAyahs.slice(startIndex, endIndex));
+                 } else if (currentMode === 'ayah-by-ayah') {
+                     totalPages = totalAyahs;
+                     currentPage = Math.max(1, Math.min(targetAyah, totalPages)); // currentPage is now ayah number
+                     renderAyahs([currentAyahs[currentPage - 1]]); // Render only one
+                 } else { // Continuous scroll
+                     currentPage = 1;
+                     totalPages = 1;
+                     renderAyahs(currentAyahs);
+                 }
+
+                updatePaginationControls();
+                updateLastRead(currentSurah, targetAyah);
+                scrollToAyah(currentSurah, targetAyah);
+                logHistory('View Surah', `Surah ${currentSurah}`);
+            };
+
+            request.onerror = (event) => {
+                console.error("Error fetching surah:", event.target.error);
+                ayahDisplayEl.innerHTML = `<p>Error loading Ayahs for Surah ${currentSurah}.</p>`;
+            };
+        }
+
+         function navigatePage(direction) {
+             if (currentMode === 'paginated' && linesPerPage > 0) {
+                 const newPage = currentPage + direction;
+                 if (newPage >= 1 && newPage <= totalPages) {
+                     currentPage = newPage;
+                     const startIndex = (currentPage - 1) * linesPerPage;
+                     const endIndex = startIndex + linesPerPage;
+                     renderAyahs(currentAyahs.slice(startIndex, endIndex));
+                     updatePaginationControls();
+                     contentPanel.scrollTop = 0; // Scroll to top of page
+                     updateLastRead(currentSurah, (currentPage - 1) * linesPerPage + 1); // Mark first ayah of page as read
+                     logHistory('Navigate Page', `Surah ${currentSurah}, Page ${currentPage}`);
+                 }
+             } else if (currentMode === 'ayah-by-ayah') {
+                  const newAyahNum = currentPage + direction;
+                  if (newAyahNum >= 1 && newAyahNum <= totalPages) { // totalPages is totalAyahs here
+                     currentPage = newAyahNum;
+                     renderAyahs([currentAyahs[currentPage - 1]]);
+                     updatePaginationControls();
+                     updateLastRead(currentSurah, currentPage);
+                     logHistory('Navigate Ayah', `Surah ${currentSurah}, Ayah ${currentPage}`);
+                 }
+             }
+         }
+
+        function scrollToAyah(suraNum, ayahNum) {
+            setTimeout(() => { // Allow DOM to update
+                 const targetElement = document.getElementById(`s${suraNum}a${ayahNum}`);
+                 if (targetElement) {
+                    if (currentMode === 'paginated' || currentMode === 'ayah-by-ayah') {
+                         contentPanel.scrollTop = 0; // Pages/single ayahs start at top
+                    } else {
+                         targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                 } else if (currentMode !== 'paginated' && currentMode !== 'ayah-by-ayah') {
+                     // If target not found in continuous mode (maybe on different 'page'), scroll to top
+                    contentPanel.scrollTop = 0;
+                 }
+             }, 100);
+        }
+
+
+         async function performSearch(term) {
+             const query = term.trim();
+             if (!query || query.length < 2) {
+                 loadSurah(currentSurah, 1); // Revert to current surah view if query is too short
+                 searchResultsInfoEl.style.display = 'none';
+                 return;
+             }
+             console.log(`Searching for: ${query}`);
+             isSearchActive = true;
+             ayahDisplayEl.innerHTML = '<p>Searching...</p>';
+             paginationControlsEl.style.display = 'none'; // Hide pagination during search
+
+             try {
+                const transaction = db.transaction(AYAH_STORE, 'readonly');
+                const store = transaction.objectStore(AYAH_STORE);
+                const results = [];
+
+                // Normalize search term for token matching
+                const normalize = (str) => str.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟۔،]/g,"").replace(/\s+/g, ' ').trim();
+                const searchTokens = normalize(query).split(' ');
+
+                 // Option 1: Iterate through all (can be slow for large DBs without full-text index)
+                 /*
+                 let cursorReq = store.openCursor();
+                 cursorReq.onsuccess = event => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        const ayah = cursor.value;
+                         const arabicMatch = ayah.arabic && ayah.arabic.toLowerCase().includes(query.toLowerCase());
+                         const transMatch = ayah.translation && ayah.translation.toLowerCase().includes(query.toLowerCase());
+                        if (arabicMatch || transMatch) {
+                            results.push(ayah);
+                        }
+                        cursor.continue();
+                    } else {
+                         // Search complete
+                         currentSearchResults = results.sort((a,b) => a.surah === b.surah ? a.ayah - b.ayah : a.surah - b.surah);
+                         renderAyahs(currentSearchResults, query);
+                         searchResultsInfoEl.textContent = `Found ${currentSearchResults.length} results for "${query}".`;
+                         searchResultsInfoEl.style.display = 'block';
+                         logHistory('Search', `Query: "${query}", Found: ${currentSearchResults.length}`);
+                    }
+                 };
+                 cursorReq.onerror = event => {
+                     console.error("Search error:", event.target.error);
+                     ayahDisplayEl.innerHTML = '<p>Error during search.</p>';
+                      searchResultsInfoEl.style.display = 'none';
+                 };
+                 */
+
+                // Option 2: Use token index (faster if implemented correctly)
+                // Requires iterating through search tokens and finding matches
+                // This is more complex to implement perfectly with pure IndexedDB for multi-token AND search
+                // Let's stick to simpler text matching for this example, acknowledging performance limitations.
+                // For a real production app, a proper FTS solution or backend search would be better.
+
+                // Simplified approach using getAll (still loads potentially a lot of data)
+                const allAyahsReq = store.getAll();
+                allAyahsReq.onsuccess = event => {
+                     const allAyahs = event.target.result;
+                     const lowerQuery = query.toLowerCase();
+                     currentSearchResults = allAyahs.filter(ayah =>
+                         (ayah.arabic && ayah.arabic.toLowerCase().includes(lowerQuery)) ||
+                         (ayah.translation && ayah.translation.toLowerCase().includes(lowerQuery))
+                     ).sort((a,b) => a.surah === b.surah ? a.ayah - b.ayah : a.surah - b.surah);
+
+                     renderAyahs(currentSearchResults, query);
+                     searchResultsInfoEl.textContent = `Found ${currentSearchResults.length} results for "${query}".`;
+                     searchResultsInfoEl.style.display = 'block';
+                     logHistory('Search', `Query: "${query}", Found: ${currentSearchResults.length}`);
+                     contentPanel.scrollTop = 0;
+                 };
+                 allAyahsReq.onerror = event => {
+                    console.error("Search error (getAll):", event.target.error);
+                     ayahDisplayEl.innerHTML = '<p>Error during search.</p>';
+                      searchResultsInfoEl.style.display = 'none';
+                 };
+
+
+            } catch (error) {
+                console.error("Error performing search:", error);
+                ayahDisplayEl.innerHTML = '<p>An error occurred during the search.</p>';
+                searchResultsInfoEl.style.display = 'none';
+            }
+        }
+
+        async function updateLastRead(surah, ayah, forceSave = true) {
+             const currentLastRead = await getMetaData(LAST_READ_KEY) || {};
+             // Only update if it's a later position
+             if (surah > (currentLastRead.surah || 0) || (surah === currentLastRead.surah && ayah > (currentLastRead.ayah || 0))) {
+                 const position = { surah: surah, ayah: ayah, timestamp: Date.now() };
+                 if (forceSave) {
+                     await setMetaData(LAST_READ_KEY, position);
+                     console.log(`Last read position saved: S${surah}:A${ayah}`);
+                     logHistory('Read Progress', `Reached S${surah}:A${ayah}`);
+                 } else {
+                     // Store temporarily if not force saving
+                     window._tempLastRead = position;
+                 }
+             } else if (forceSave && window._tempLastRead) {
+                 // Save the latest temporary position if forceSave is true
+                 await setMetaData(LAST_READ_KEY, window._tempLastRead);
+                 console.log(`Last read position saved (debounced): S${window._tempLastRead.surah}:A${window._tempLastRead.ayah}`);
+                 logHistory('Read Progress', `Reached S${window._tempLastRead.surah}:A${window._tempLastRead.ayah}`);
+                 delete window._tempLastRead;
+             }
+        }
+
+        async function toggleBookmark(ayahRef, buttonElement) {
+             const bookmarks = await getMetaData(BOOKMARKS_KEY) || {};
+             const isBookmarked = bookmarks[ayahRef];
+
+             if (isBookmarked) {
+                 delete bookmarks[ayahRef];
+                 if(buttonElement) {
+                    buttonElement.classList.remove('bookmarked');
+                    buttonElement.textContent = 'Bookmark ☆';
+                 }
+                 logHistory('Bookmark Removed', `Ayah ${ayahRef}`);
+             } else {
+                 bookmarks[ayahRef] = { timestamp: Date.now() };
+                 if(buttonElement) {
+                    buttonElement.classList.add('bookmarked');
+                    buttonElement.textContent = 'Bookmarked ★';
+                 }
+                 logHistory('Bookmark Added', `Ayah ${ayahRef}`);
+             }
+             await setMetaData(BOOKMARKS_KEY, bookmarks);
+             console.log("Bookmarks updated:", bookmarks);
+        }
+
+         function shareAyah(ayahRef) {
+             const [s, a] = ayahRef.split(':').map(Number);
+             const ayahData = currentAyahs.find(ayah => ayah.surah === s && ayah.ayah === a) || (currentSearchResults && currentSearchResults.find(ayah => ayah.surah === s && ayah.ayah === a));
+
+             if (ayahData && navigator.share) {
+                 navigator.share({
+                     title: `Quran Ayah ${ayahRef}`,
+                     text: `${ayahData.arabic}\n\nTranslation: ${ayahData.translation}\n\n(Quran ${ayahRef})`,
+                    // url: window.location.href // Or a specific URL if you implement deep linking
+                 }).then(() => {
+                    console.log('Shared successfully');
+                    logHistory('Share Ayah', `Ayah ${ayahRef}`);
+                 }).catch((error) => console.error('Share failed:', error));
+             } else if (ayahData) {
+                 // Fallback for browsers without navigator.share
+                 const textToCopy = `${ayahData.arabic}\n\nTranslation: ${ayahData.translation}\n\n(Quran ${ayahRef})`;
+                 navigator.clipboard.writeText(textToCopy).then(() => {
+                     alert('Ayah copied to clipboard!');
+                     logHistory('Copy Ayah', `Ayah ${ayahRef}`);
+                 }).catch(err => {
+                     console.error('Failed to copy: ', err);
+                     alert('Could not copy Ayah. Your browser might not support this feature.');
+                 });
+             } else {
+                alert('Could not find Ayah data to share.');
+             }
+         }
+
+
+        // --- Settings ---
+
+         function applySettings(settings) {
+             // Theme
+             document.documentElement.dataset.theme = settings.theme || 'dark';
+             themeSelect.value = settings.theme || 'dark';
+
+             // Font Sizes
+            const baseSize = settings.fontSize || 16;
+             const arabicSize = settings.arabicFontSize || 1.8;
+             const translationSize = settings.translationFontSize || 1.0;
+
+             document.documentElement.style.setProperty('--font-size-base', `${baseSize}px`);
+             document.documentElement.style.setProperty('--font-size-arabic', `${arabicSize}rem`);
+             document.documentElement.style.setProperty('--font-size-translation', `${translationSize}rem`);
+
+             fontSizeSlider.value = baseSize;
+             arabicFontSizeSlider.value = arabicSize;
+             translationFontSizeSlider.value = translationSize;
+             fontSizeValue.textContent = `${baseSize}px`;
+             arabicFontSizeValue.textContent = `${arabicSize}rem`;
+             translationFontSizeValue.textContent = `${translationSize}rem`;
+
+             // Content Visibility
+             showArabicCheckbox.checked = settings.showArabic === undefined ? true : settings.showArabic;
+             showTranslationCheckbox.checked = settings.showTranslation === undefined ? true : settings.showTranslation;
+             applyContentVisibility();
+
+             // Reading Mode
+             currentMode = settings.readingMode || 'paginated';
+             readingModeSelect.value = currentMode;
+             linesPerPage = parseInt(settings.linesPerPage || '10', 10);
+             linesPerPageSelect.value = linesPerPage;
+
+             // Re-render if mode changed significantly
+             if (isSearchActive) {
+                 renderAyahs(currentSearchResults, searchInput.value.trim()); // Re-render search results with new settings
+             } else {
+                 loadSurah(currentSurah, currentPage); // Reload current view applying mode/pagination
+             }
+
+             console.log("Settings applied:", settings);
+         }
+
+         function applyFontSizes() {
+              // This might not be strictly necessary if CSS variables update live,
+              // but ensures consistency.
+              const baseSize = userSettings.fontSize || 16;
+              const arabicSize = userSettings.arabicFontSize || 1.8;
+              const translationSize = userSettings.translationFontSize || 1.0;
+              document.documentElement.style.setProperty('--font-size-base', `${baseSize}px`);
+              document.documentElement.style.setProperty('--font-size-arabic', `${arabicSize}rem`);
+              document.documentElement.style.setProperty('--font-size-translation', `${translationSize}rem`);
+         }
+
+         function applyContentVisibility() {
+             const showArabic = showArabicCheckbox.checked;
+             const showTranslation = showTranslationCheckbox.checked;
+
+             ayahDisplayEl.querySelectorAll('.ayah').forEach(ayahEl => {
+                 const arabicEl = ayahEl.querySelector('.ayah-arabic');
+                 const translationEl = ayahEl.querySelector('.ayah-translation');
+                 if (arabicEl) arabicEl.style.display = showArabic ? '' : 'none';
+                 if (translationEl) translationEl.style.display = showTranslation ? '' : 'none';
+             });
+         }
+
+         async function saveSettings() {
+             userSettings = {
+                 theme: themeSelect.value,
+                 fontSize: parseInt(fontSizeSlider.value, 10),
+                 arabicFontSize: parseFloat(arabicFontSizeSlider.value),
+                 translationFontSize: parseFloat(translationFontSizeSlider.value),
+                 showArabic: showArabicCheckbox.checked,
+                 showTranslation: showTranslationCheckbox.checked,
+                 readingMode: readingModeSelect.value,
+                 linesPerPage: parseInt(linesPerPageSelect.value, 10),
+             };
+             await setMetaData(SETTINGS_KEY, userSettings);
+             applySettings(userSettings); // Apply immediately
+             console.log("Settings saved.");
+             logHistory('Settings Changed', JSON.stringify(userSettings));
+         }
+
+         async function loadSettings() {
+             const savedSettings = await getMetaData(SETTINGS_KEY);
+             userSettings = savedSettings || {}; // Use defaults if nothing saved
+             applySettings(userSettings); // Apply loaded or default settings
+         }
+
+        // --- Service Worker ---
+
+        function registerServiceWorker() {
+             if ('serviceWorker' in navigator) {
+                // Define the service worker code as a string
+                const swCode = `
+                    const CACHE_NAME = 'quran-app-cache-v1';
+                    const urlsToCache = [
+                        '/', // Cache the main HTML file itself
+                        // Add other essential static assets if they existed separately
+                        // e.g., 'styles.css', 'app.js', 'icon.png'
+                        // In this single-file app, '/' is the most crucial one.
+                        // The data file 'data/data.AM' is NOT cached by default by the SW
+                        // as it's fetched dynamically by the app logic and stored in IndexedDB.
+                        // Caching it here might be redundant or lead to issues if it's large.
+                    ];
+
+                    self.addEventListener('install', event => {
+                        console.log('Service Worker: Installing...');
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => {
+                                    console.log('Service Worker: Caching app shell');
+                                    // Add URLs one by one, ignore errors for optional resources
+                                    const cachePromises = urlsToCache.map(urlToCache => {
+                                        return cache.add(urlToCache).catch(err => {
+                                            console.warn(\`SW Cache add failed for \${urlToCache}: \${err}\`);
+                                        });
+                                    });
+                                    return Promise.all(cachePromises);
+                                })
+                                .then(() => self.skipWaiting()) // Activate worker immediately
+                        );
+                    });
+
+                    self.addEventListener('activate', event => {
+                        console.log('Service Worker: Activating...');
+                        // Clean up old caches
+                        event.waitUntil(
+                            caches.keys().then(cacheNames => {
+                                return Promise.all(
+                                    cacheNames.map(cacheName => {
+                                        if (cacheName !== CACHE_NAME) {
+                                            console.log('Service Worker: Deleting old cache:', cacheName);
+                                            return caches.delete(cacheName);
+                                        }
+                                    })
+                                );
+                            }).then(() => self.clients.claim()) // Take control of open clients
+                        );
+                    });
+
+                    self.addEventListener('fetch', event => {
+                         // Basic cache-first strategy for GET requests
+                         if (event.request.method === 'GET') {
+                            event.respondWith(
+                                caches.match(event.request)
+                                    .then(response => {
+                                        // Cache hit - return response
+                                        if (response) {
+                                            // console.log(\`Service Worker: Serving from cache: \${event.request.url}\`);
+                                            return response;
+                                        }
+
+                                        // Not in cache - fetch from network
+                                        // console.log(\`Service Worker: Fetching from network: \${event.request.url}\`);
+                                        return fetch(event.request).then(
+                                            networkResponse => {
+                                                // Check if we received a valid response
+                                                if(!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                                                    // Don't cache invalid responses (like CORS errors)
+                                                    return networkResponse;
+                                                }
+
+                                                // IMPORTANT: Clone the response. A response is a stream
+                                                // and because we want the browser to consume the response
+                                                // as well as the cache consuming the response, we need
+                                                // to clone it so we have two streams.
+                                                var responseToCache = networkResponse.clone();
+
+                                                // Cache the fetched response (optional, depends on what needs caching)
+                                                // Be careful not to cache everything, especially large dynamic data files
+                                                // if they are handled by IndexedDB anyway.
+                                                /*
+                                                caches.open(CACHE_NAME)
+                                                    .then(cache => {
+                                                        cache.put(event.request, responseToCache);
+                                                    });
+                                                */
+
+                                                return networkResponse;
+                                            }
+                                        ).catch(error => {
+                                             console.log(\`Service Worker: Fetch failed for \${event.request.url}; returning offline fallback if available.\`, error);
+                                             // Optionally, return an offline fallback page/resource
+                                             // return caches.match('/offline.html');
+                                         });
+                                    })
+                            );
+                        }
+                     });
+                `;
+
+                 // Create a Blob from the string
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                 // Create an object URL from the Blob
+                const swUrl = URL.createObjectURL(blob);
+
+                // Register the service worker using the object URL
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                         // Check for updates on page load
+                         registration.update();
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+
+                // Optional: Reload page when a new service worker takes control
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                     window.location.reload();
+                });
+            } else {
+                console.warn('Service workers are not supported in this browser.');
+            }
+        }
+
+         // --- User Features ---
+
+         // Backup & Restore
+        async function exportData() {
+             try {
+                 const bookmarks = await getMetaData(BOOKMARKS_KEY) || {};
+                 const lastRead = await getMetaData(LAST_READ_KEY) || {};
+                 const settings = await getMetaData(SETTINGS_KEY) || {};
+                 const history = await getMetaData(HISTORY_KEY) || [];
+                 const reminders = await getMetaData(REMINDERS_KEY) || {};
+                 const alerts = await getMetaData(ALERTS_KEY) || {};
+
+
+                 const dataToExport = {
+                     version: 1,
+                     timestamp: new Date().toISOString(),
+                     bookmarks: bookmarks,
+                     lastRead: lastRead,
+                     settings: settings,
+                     history: history,
+                     reminders: reminders,
+                     alerts: alerts
+                 };
+
+                 const dataStr = JSON.stringify(dataToExport, null, 2);
+                 const blob = new Blob([dataStr], { type: 'application/json' });
+                 const url = URL.createObjectURL(blob);
+                 const a = document.createElement('a');
+                 a.href = url;
+                 a.download = `quran_app_backup_${new Date().toISOString().split('T')[0]}.json`;
+                 document.body.appendChild(a);
+                 a.click();
+                 document.body.removeChild(a);
+                 URL.revokeObjectURL(url);
+                 console.log("Data exported successfully.");
+                 logHistory('Data Exported', `Backup file created.`);
+             } catch (error) {
+                 console.error("Error exporting data:", error);
+                 alert("Error exporting data. See console for details.");
+             }
+         }
+
+        function triggerImport() {
+             importDataInput.click();
+         }
+
+        async function importData(event) {
+             const file = event.target.files[0];
+             if (!file) {
+                 importStatusEl.textContent = 'No file selected.';
+                 return;
+             }
+             if (file.type !== 'application/json') {
+                  importStatusEl.textContent = 'Invalid file type. Please select a JSON file.';
+                  return;
+             }
+
+             importStatusEl.textContent = `Importing ${file.name}...`;
+
+             const reader = new FileReader();
+             reader.onload = async (e) => {
+                 try {
+                     const importedData = JSON.parse(e.target.result);
+
+                     // Basic validation
+                     if (!importedData || typeof importedData !== 'object' || !importedData.timestamp) {
+                        throw new Error("Invalid backup file format.");
+                     }
+
+                     // **Important:** Add confirmation dialog here in a real app!
+                     if (!confirm("Importing will overwrite current bookmarks, settings, and progress. Are you sure?")) {
+                         importStatusEl.textContent = 'Import cancelled.';
+                         return;
+                     }
+
+                     // Clear existing data (optional, depends on merge strategy)
+                     // await setMetaData(BOOKMARKS_KEY, {});
+                     // await setMetaData(LAST_READ_KEY, {});
+                     // await setMetaData(SETTINGS_KEY, {});
+                     // await setMetaData(HISTORY_KEY, []);
+                     // await setMetaData(REMINDERS_KEY, {});
+                     // await setMetaData(ALERTS_KEY, {});
+
+
+                     // Import data - could merge or replace
+                     if (importedData.bookmarks) await setMetaData(BOOKMARKS_KEY, importedData.bookmarks);
+                     if (importedData.lastRead) await setMetaData(LAST_READ_KEY, importedData.lastRead);
+                     if (importedData.settings) await setMetaData(SETTINGS_KEY, importedData.settings);
+                     if (importedData.history) await setMetaData(HISTORY_KEY, importedData.history); // Consider merging history?
+                     if (importedData.reminders) await setMetaData(REMINDERS_KEY, importedData.reminders);
+                     if (importedData.alerts) await setMetaData(ALERTS_KEY, importedData.alerts);
+
+
+                     importStatusEl.textContent = 'Import successful! Reloading app...';
+                     logHistory('Data Imported', `Restored from ${file.name}.`);
+
+                     // Reload settings and potentially the view
+                     await loadSettings(); // Apply new settings
+                     await loadLastReadPosition(); // Go to last read position from import
+                     populateSurahList(); // Refresh UI elements if needed
+                      loadReminders(); // Refresh reminder list
+                      loadCustomAlerts(); // Refresh alerts list
+
+                     alert("Import successful! The app might need to reload or settings have been applied.");
+                     // Optionally force reload: window.location.reload();
+
+
+                 } catch (error) {
+                     console.error("Error importing data:", error);
+                     importStatusEl.textContent = `Import failed: ${error.message}`;
+                     alert(`Import failed: ${error.message}`);
+                 } finally {
+                     // Reset file input value to allow importing the same file again
+                     importDataInput.value = null;
+                 }
+             };
+             reader.onerror = () => {
+                  importStatusEl.textContent = 'Failed to read file.';
+                  alert('Failed to read the selected file.');
+             };
+             reader.readAsText(file);
+         }
+
+
+         // Alerts & Reminders (Basic using Notification API)
+         async function requestNotificationPermission() {
+             if (!('Notification' in window)) {
+                 alert('This browser does not support desktop notification');
+                 return false;
+             } else if (Notification.permission === 'granted') {
+                 return true;
+             } else if (Notification.permission !== 'denied') {
+                 const permission = await Notification.requestPermission();
+                 return permission === 'granted';
+             }
+             return false;
+         }
+
+         function showNotification(title, options) {
+             if (!('Notification' in window)) return;
+
+             if (Notification.permission === 'granted') {
+                 navigator.serviceWorker.ready.then(registration => {
+                     registration.showNotification(title, options);
+                 }).catch(err => {
+                    // Fallback if SW not ready or fails
+                    new Notification(title, options);
+                    console.warn("Showing notification directly, SW might not be ready:", err);
+                 });
+             } else {
+                console.warn("Notification permission not granted.");
+             }
+         }
+
+         async function setReminder() {
+             const permissionGranted = await requestNotificationPermission();
+             if (!permissionGranted) {
+                 alert("Notification permission denied. Please enable notifications in your browser settings.");
+                 return;
+             }
+
+             const reminderTimeStr = reminderTimeInput.value;
+             if (!reminderTimeStr) {
+                 alert("Please select a time for the reminder.");
+                 return;
+             }
+
+             const reminderTime = new Date(reminderTimeStr).getTime();
+             const now = Date.now();
+
+             if (reminderTime <= now) {
+                 alert("Please select a future time for the reminder.");
+                 return;
+             }
+
+             const reminders = await getMetaData(REMINDERS_KEY) || {};
+             const reminderId = `reminder_${reminderTime}`;
+             reminders[reminderId] = {
+                 time: reminderTime,
+                 message: "Time to read Quran!",
+                 created: now
+             };
+
+             await setMetaData(REMINDERS_KEY, reminders);
+             scheduleReminder(reminderId, reminderTime, "Time to read Quran!");
+             loadReminders(); // Refresh list
+             reminderTimeInput.value = ''; // Clear input
+             logHistory('Reminder Set', `Time: ${new Date(reminderTime).toLocaleString()}`);
+         }
+
+         function scheduleReminder(id, time, message) {
+             const delay = time - Date.now();
+             if (delay <= 0) return; // Don't schedule past reminders
+
+             setTimeout(async () => {
+                 // Verify reminder still exists before showing
+                 const currentReminders = await getMetaData(REMINDERS_KEY) || {};
+                 if (currentReminders[id]) {
+                    showNotification("Quran Reminder", {
+                        body: message,
+                        icon: 'icon.png' // Add a path to an icon if you have one
+                    });
+                    // Optional: Remove reminder after it fires
+                    // delete currentReminders[id];
+                    // await setMetaData(REMINDERS_KEY, currentReminders);
+                    // loadReminders();
+                 }
+             }, delay);
+         }
+
+          async function loadReminders() {
+             const reminders = await getMetaData(REMINDERS_KEY) || {};
+             reminderListEl.innerHTML = ''; // Clear list
+             Object.entries(reminders).forEach(([id, reminder]) => {
+                 if (reminder.time > Date.now()) { // Only show future reminders
+                    const li = document.createElement('li');
+                    li.textContent = `Reminder set for: ${new Date(reminder.time).toLocaleString()}`;
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.style.marginLeft = '10px';
+                    cancelBtn.onclick = async () => {
+                        delete reminders[id];
+                        await setMetaData(REMINDERS_KEY, reminders);
+                        loadReminders(); // Refresh list
+                        logHistory('Reminder Cancelled', `ID: ${id}`);
+                    };
+                    li.appendChild(cancelBtn);
+                    reminderListEl.appendChild(li);
+                     // Re-schedule on load in case browser was closed
+                    scheduleReminder(id, reminder.time, reminder.message);
+                }
+             });
+         }
+          async function clearAllReminders() {
+              if(confirm("Are you sure you want to clear all reminders?")) {
+                  await setMetaData(REMINDERS_KEY, {});
+                  loadReminders();
+                  logHistory('All Reminders Cleared', '');
+              }
+          }
+
+
+          // Custom Ayah Alerts
+         async function setCustomAlert() {
+            const permissionGranted = await requestNotificationPermission();
+             if (!permissionGranted) {
+                 alert("Notification permission denied. Please enable notifications in your browser settings.");
+                 return;
+             }
+             const ayahRef = alertAyahRefInput.value.trim();
+             const message = alertMessageInput.value.trim();
+             const refMatch = ayahRef.match(/^(\d+):(\d+)$/);
+
+             if (!refMatch) {
+                 alert("Invalid Ayah reference format. Use Sura:Ayah (e.g., 2:255).");
+                 return;
+             }
+             if (!message) {
+                 alert("Please enter an alert message.");
+                 return;
+             }
+
+             const [, surah, ayah] = refMatch.map(Number);
+             const alertId = `alert_${surah}_${ayah}`;
+             const alerts = await getMetaData(ALERTS_KEY) || {};
+
+             alerts[alertId] = {
+                 surah: surah,
+                 ayah: ayah,
+                 message: message,
+                 created: Date.now()
+             };
+
+             await setMetaData(ALERTS_KEY, alerts);
+             loadCustomAlerts(); // Refresh list
+             alertAyahRefInput.value = '';
+             alertMessageInput.value = '';
+             logHistory('Custom Alert Set', `Ayah ${ayahRef}, Msg: ${message}`);
+         }
+
+          async function checkAndTriggerCustomAlerts(viewedSurah, viewedAyah) {
+             const alerts = await getMetaData(ALERTS_KEY) || {};
+             const alertId = `alert_${viewedSurah}_${viewedAyah}`;
+
+             if (alerts[alertId]) {
+                const alertData = alerts[alertId];
+                showNotification(`Quran Alert: ${viewedSurah}:${viewedAyah}`, {
+                     body: alertData.message,
+                     icon: 'icon.png' // Add icon path
+                 });
+                 logHistory('Custom Alert Triggered', `Ayah ${viewedSurah}:${viewedAyah}`);
+
+                 // Optional: Remove alert after triggering once?
+                 // delete alerts[alertId];
+                 // await setMetaData(ALERTS_KEY, alerts);
+                 // loadCustomAlerts(); // Refresh list in settings
+             }
+         }
+
+         async function loadCustomAlerts() {
+             const alerts = await getMetaData(ALERTS_KEY) || {};
+             customAlertListEl.innerHTML = ''; // Clear list
+             Object.entries(alerts).forEach(([id, alertData]) => {
+                 const li = document.createElement('li');
+                 li.textContent = `Alert for ${alertData.surah}:${alertData.ayah} - "${alertData.message}"`;
+                 const removeBtn = document.createElement('button');
+                 removeBtn.textContent = 'Remove';
+                 removeBtn.style.marginLeft = '10px';
+                 removeBtn.onclick = async () => {
+                     delete alerts[id];
+                     await setMetaData(ALERTS_KEY, alerts);
+                     loadCustomAlerts(); // Refresh list
+                     logHistory('Custom Alert Removed', `ID: ${id}`);
+                 };
+                 li.appendChild(removeBtn);
+                 customAlertListEl.appendChild(li);
+             });
+         }
+
+
+         // Reporting
+        async function showHistoryLog() {
+             const history = await getMetaData(HISTORY_KEY) || [];
+             historyLogContent.innerHTML = '<ul>' +
+                 history.slice().reverse().map(entry => `<li>${new Date(entry.timestamp).toLocaleString()}: <strong>${entry.action}</strong> - <span>${entry.details || ''}</span></li>`).join('') +
+                 '</ul>';
+             historyModal.style.display = 'flex';
+        }
+
+        async function showReportingView() {
+            const history = await getMetaData(HISTORY_KEY) || [];
+            const progressEvents = history.filter(e => e.action === 'Read Progress');
+            const bookmarks = await getMetaData(BOOKMARKS_KEY) || {};
+            const lastRead = await getMetaData(LAST_READ_KEY) || {};
+
+            let reportHtml = '<ul>';
+            reportHtml += `<li><strong>Last Read Position:</strong> <span>${lastRead.surah ? `Surah ${lastRead.surah}, Ayah ${lastRead.ayah}` : 'Not Set'} (at ${lastRead.timestamp ? new Date(lastRead.timestamp).toLocaleString() : 'N/A'})</span></li>`;
+            reportHtml += `<li><strong>Total Bookmarks:</strong> <span>${Object.keys(bookmarks).length}</span></li>`;
+
+             // Simple progress summary by date
+            const progressByDate = progressEvents.reduce((acc, curr) => {
+                const date = new Date(curr.timestamp).toLocaleDateString();
+                acc[date] = (acc[date] || 0) + 1; // Count progress updates per day
+                return acc;
+            }, {});
+
+            reportHtml += '<li><strong>Recent Activity (Progress Updates):</strong></li>';
+             if (Object.keys(progressByDate).length > 0) {
+                 reportHtml += '<ul>';
+                 Object.entries(progressByDate)
+                      .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA)) // Sort recent first
+                      .slice(0, 10) // Show last 10 days
+                      .forEach(([date, count]) => {
+                          reportHtml += `<li>${date}: <span>${count} ayah${count > 1 ? 's' : ''} marked as read</span></li>`;
+                      });
+                 reportHtml += '</ul>';
+             } else {
+                 reportHtml += '<li><span>No reading progress recorded yet.</span></li>';
+             }
+
+
+             // Add more complex reporting here (e.g., group by month/year, calculate pages read if possible)
+
+            reportHtml += '</ul>';
+
+            reportingViewContent.innerHTML = reportHtml;
+            reportingModal.style.display = 'flex';
+         }
+
+
+         // History Log
+        async function logHistory(action, details = '') {
+             try {
+                const history = await getMetaData(HISTORY_KEY) || [];
+                history.push({ timestamp: Date.now(), action, details });
+                // Limit history size (e.g., last 500 entries)
+                if (history.length > 500) {
+                     history.shift(); // Remove the oldest entry
+                 }
+                await setMetaData(HISTORY_KEY, history);
+             } catch (error) {
+                 console.warn("Could not log history:", error);
+             }
+         }
+
+
+        // --- Initialization and Event Listeners ---
+
+        function setupEventListeners() {
+            settingsToggle.onclick = () => settingsPanel.classList.toggle('open');
+            menuToggle.onclick = () => navPanel.classList.toggle('open');
+
+            // Close nav/settings panel if clicking outside on mobile overlay
+            appContainer.addEventListener('click', (e) => {
+                 if (window.innerWidth <= 768) {
+                     if (navPanel.classList.contains('open') && !navPanel.contains(e.target) && e.target !== menuToggle) {
+                         navPanel.classList.remove('open');
+                     }
+                 }
+                 // Close settings panel if clicking outside
+                 if (settingsPanel.classList.contains('open') && !settingsPanel.contains(e.target) && e.target !== settingsToggle) {
+                    settingsPanel.classList.remove('open');
+                 }
+             });
+
+
+             themeSelect.onchange = saveSettings;
+             fontSizeSlider.oninput = () => {
+                fontSizeValue.textContent = `${fontSizeSlider.value}px`;
+                // Apply live preview
+                document.documentElement.style.setProperty('--font-size-base', `${fontSizeSlider.value}px`);
+             };
+             fontSizeSlider.onchange = saveSettings; // Save on release
+
+             arabicFontSizeSlider.oninput = () => {
+                arabicFontSizeValue.textContent = `${arabicFontSizeSlider.value}rem`;
+                document.documentElement.style.setProperty('--font-size-arabic', `${arabicFontSizeSlider.value}rem`);
+             };
+             arabicFontSizeSlider.onchange = saveSettings;
+
+             translationFontSizeSlider.oninput = () => {
+                translationFontSizeValue.textContent = `${translationFontSizeSlider.value}rem`;
+                document.documentElement.style.setProperty('--font-size-translation', `${translationFontSizeSlider.value}rem`);
+             };
+            translationFontSizeSlider.onchange = saveSettings;
+
+             showArabicCheckbox.onchange = () => { applyContentVisibility(); saveSettings(); };
+             showTranslationCheckbox.onchange = () => { applyContentVisibility(); saveSettings(); };
+
+             readingModeSelect.onchange = async () => {
+                currentMode = readingModeSelect.value;
+                 await saveSettings(); // Saves the new mode
+                 // Reload current view with the new mode setting
+                 if (isSearchActive) {
+                     renderAyahs(currentSearchResults, searchInput.value.trim()); // Re-render search results
+                 } else {
+                    // Get the first visible ayah's ref before reloading
+                    const firstVisibleAyahEl = ayahDisplayEl.querySelector('.ayah');
+                    let targetAyah = 1;
+                    if(firstVisibleAyahEl) {
+                        targetAyah = parseInt(firstVisibleAyahEl.dataset.ayah, 10);
+                    } else {
+                        const lastRead = await getMetaData(LAST_READ_KEY);
+                        if(lastRead && lastRead.surah === currentSurah) targetAyah = lastRead.ayah;
+                    }
+                    loadSurah(currentSurah, targetAyah);
+                 }
+             };
+
+            linesPerPageSelect.onchange = async () => {
+                linesPerPage = parseInt(linesPerPageSelect.value, 10);
+                await saveSettings(); // Saves the new linesPerPage
+                 // Reload current view with the new pagination setting if in paginated mode
+                 if (currentMode === 'paginated') {
+                     loadSurah(currentSurah, (currentPage - 1) * linesPerPage + 1); // Go to first ayah of current (conceptual) page
+                 }
+             };
+
+            prevPageBtn.onclick = () => navigatePage(-1);
+            nextPageBtn.onclick = () => navigatePage(1);
+
+            searchButton.onclick = () => performSearch(searchInput.value);
+            searchInput.onkeyup = (e) => { if (e.key === 'Enter') performSearch(searchInput.value); };
+
+            // Swipe Gestures for Navigation
+            contentPanel.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+            contentPanel.addEventListener('touchend', e => {
+                 touchEndX = e.changedTouches[0].screenX;
+                 handleSwipe();
+             });
+
+            fullscreenToggle.onclick = toggleFullScreen;
+
+            // User Features Buttons
+             exportDataButton.onclick = exportData;
+             importDataButton.onclick = triggerImport;
+             importDataInput.onchange = importData;
+             setReminderButton.onclick = setReminder;
+             clearRemindersButton.onclick = clearAllReminders;
+             setAlertButton.onclick = setCustomAlert;
+             viewHistoryButton.onclick = showHistoryLog;
+             viewReportingButton.onclick = showReportingView;
+
+        }
+
+        function handleSwipe() {
+             const threshold = 50; // Minimum swipe distance
+             if (currentMode === 'ayah-by-ayah' || (currentMode === 'paginated' && linesPerPage > 0)) {
+                 if (touchEndX < touchStartX - threshold) {
+                     navigatePage(1); // Swipe Left -> Next Page/Ayah
+                 }
+                 if (touchEndX > touchStartX + threshold) {
+                     navigatePage(-1); // Swipe Right -> Previous Page/Ayah
+                 }
+             }
+             // Reset values
+            touchStartX = 0;
+             touchEndX = 0;
+         }
+
+
+        function toggleFullScreen() {
+             const elem = appContainer; // Element to make fullscreen
+
+             if (!document.fullscreenElement) {
+                 elem.requestFullscreen().catch(err => {
+                     alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                 });
+                 elem.classList.add('fullscreen');
+                 fullscreenToggle.textContent = 'Exit ⛶';
+                 logHistory('Fullscreen Entered', '');
+
+                 // Add close button dynamically for fullscreen exit
+                 if (!document.getElementById('fullscreen-close-btn')) {
+                     const closeBtn = document.createElement('div');
+                     closeBtn.id = 'fullscreen-close-btn';
+                     closeBtn.classList.add('fullscreen-controls');
+                     closeBtn.innerHTML = '<button>&times;</button>';
+                     closeBtn.onclick = toggleFullScreen;
+                     elem.appendChild(closeBtn);
+                 }
+
+             } else {
+                if (document.exitFullscreen) {
+                     document.exitFullscreen();
+                 }
+                elem.classList.remove('fullscreen');
+                 fullscreenToggle.textContent = '⛶';
+                 logHistory('Fullscreen Exited', '');
+                 const closeBtn = document.getElementById('fullscreen-close-btn');
+                 if(closeBtn) closeBtn.remove();
+
+             }
+         }
+
+        document.addEventListener('fullscreenchange', () => {
+             if (!document.fullscreenElement) {
+                 // Ensure state is correct if exited via ESC key etc.
+                 appContainer.classList.remove('fullscreen');
+                 fullscreenToggle.textContent = '⛶';
+                 const closeBtn = document.getElementById('fullscreen-close-btn');
+                 if(closeBtn) closeBtn.remove();
+             }
+         });
+
+        async function loadLastReadPosition() {
+            const lastRead = await getMetaData(LAST_READ_KEY);
+            if (lastRead && lastRead.surah && lastRead.ayah) {
+                 console.log(`Resuming at S${lastRead.surah}:A${lastRead.ayah}`);
+                 await loadSurah(lastRead.surah, lastRead.ayah);
+                 // Ensure the correct surah is highlighted in the nav
+                 currentSurah = lastRead.surah;
+                 highlightActiveSurah();
+            } else {
+                 // Load Surah Al-Fatiha (1) Ayah 1 by default
+                 await loadSurah(1, 1);
+                 currentSurah = 1;
+                 highlightActiveSurah();
+            }
+         }
+
+         async function initApp() {
+            try {
+                await openDB();
+                await loadSettings(); // Load settings early to apply theme etc.
+
+                const dataLoaded = await getMetaData(DATA_LOADED_KEY);
+                surahMeta = await getMetaData('surahMetadata') || {}; // Load metadata
+
+                 if (!dataLoaded || Object.keys(surahMeta).length < 114) { // Also check if metadata seems incomplete
+                    loadingOverlay.style.display = 'flex';
+                    const success = await loadAndStoreData();
+                    if (!success) return; // Stop init if data loading failed
+                     surahMeta = await getMetaData('surahMetadata'); // Reload metadata after storing
+                } else {
+                     loadingOverlay.style.display = 'none'; // Hide loading if data exists
+                     console.log("Quran data already loaded.");
+                 }
+
+                 if (!surahMeta || Object.keys(surahMeta).length === 0) {
+                     console.error("Critical Error: Surah metadata is missing even after potential load.");
+                     // Attempt recovery or show error
+                     alert("Error: Could not load Surah information. Please try clearing app data or reloading.");
+                     return;
+                 }
+
+
+                populateSurahList();
+                setupEventListeners();
+                registerServiceWorker();
+                await loadLastReadPosition(); // Load last read position or default
+                 await loadReminders(); // Load and schedule pending reminders
+                 await loadCustomAlerts(); // Load custom alerts list
+
+                // Initial check for alerts on load (for the current ayah)
+                 const lastRead = await getMetaData(LAST_READ_KEY);
+                 if (lastRead && lastRead.surah && lastRead.ayah) {
+                     checkAndTriggerCustomAlerts(lastRead.surah, lastRead.ayah);
+                 }
+
+
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                loadingMessage.textContent = `App Initialization Error: ${error.message}`;
+                 loadingOverlay.style.display = 'flex'; // Ensure loading is visible on error
+                 loadingProgressBar.style.backgroundColor = 'red';
+                 alert("Failed to initialize the app. Please check the console for errors.");
+            }
+        }
+
+        // --- Start the App ---
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>

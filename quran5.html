@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Quran App</title>
+<style>
+:root{--c1:#121212;--c2:#1f1f1f;--c3:#23272e;--c4:#fff;--t:0.3s;--p:#4ed07d;--b:#e0e0e0;--s:1.02;--fs:19px}
+body{margin:0;background:var(--c1);color:var(--c4);font-family:'Tajawal',sans-serif;transition:background var(--t),color var(--t);font-size:var(--fs);direction:rtl;user-select:none}
+#app{max-width:530px;margin:auto;background:var(--c2);min-height:100vh;box-shadow:0 0 9px #0004}
+header,footer{background:var(--c3);padding:.7em 1em;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2}
+button,[data-action],input,select{background:var(--c3);color:var(--c4);border:none;padding:.5em .9em;border-radius:4px;transition:background var(--t);outline:none;font-size:1em}
+button:active,[data-action]:active{background:var(--p)}
+a,a:visited{color:var(--p);text-decoration:none}
+#main{padding:1em 1em 4em 1em}
+.surah-list{display:flex;flex-wrap:wrap;gap:.41em}
+.surah-btn{flex:1 0 46%;margin:.09em 0;background:var(--c3);padding:.7em .5em;text-align:center;cursor:pointer;transition:background .2s;font-size:1.07em}
+.surah-btn.active{background:var(--p);color:#fff}
+.ayah-list{margin-top:1em}
+.ayah-card{background:var(--c3);margin-bottom:.8em;padding:.95em .8em;border-radius:8px;display:flex;flex-direction:column;gap:.55em;box-shadow:0 1px 5px #0001;transition:background .18s}
+.ayah-actions{display:flex;justify-content:flex-end;gap:.43em}
+.ayah-actions button{font-size:1em;background:var(--c2)}
+.ayah-actions .marked{color:var(--p)}
+.ayah-ar{font-size:1.26em;line-height:1.5;font-family:'Amiri',serif;word-break:break-word}
+.ayah-ur{opacity:.93;font-size:1em;padding-right:1em}
+.hl{background:rgba(79,208,125,0.25);color:var(--p);border-radius:3px}
+#search{display:flex;gap:.7em;margin:.7em 0}
+#search input{flex:1}
+#loading{position:fixed;z-index:99;top:0;left:0;width:100vw;height:100vh;background:#222eddee;display:flex;align-items:center;justify-content:center;font-size:1.27em;color:#fff;transition:opacity .4s}
+#progress-bar{width:200px;height:13px;background:#555;border-radius:7px;overflow:hidden;margin-top:2em}
+#progress{background:var(--p);height:100%;width:10%;transition:width .2s}
+#bookmarks,.notes{padding:1em}
+.bkm-item{display:flex;align-items:center;justify-content:space-between;background:var(--c3);margin-bottom:.8em;padding:.75em .7em;border-radius:7px}
+#settings{padding:1em;display:flex;flex-direction:column;gap:1em}
+.settings-row{display:flex;align-items:center;justify-content:space-between}
+input[type=range]{width:80px}
+label[for]{font-size:1em}
+#backup{padding:1em}
+#reminders{padding:1em}
+#reports{padding:1em}
+#history{padding:1em}
+@media (max-width:630px){#app{max-width:100vw;border-radius:0}}
+::-webkit-scrollbar{width:7px}
+::-webkit-scrollbar-thumb{background:var(--p);border-radius:10px}
+.fullscreen header,.fullscreen footer,.fullscreen #navbar,.fullscreen #search,.fullscreen #settings,.fullscreen #backup,.fullscreen #bookmarks,.fullscreen #reminders,.fullscreen #reports,.fullscreen #history{display:none!important}
+.fullscreen #main{padding:0;margin:0}
+.fullscreen .ayah-list{margin-top:0}
+.fullscreen{background:var(--c1)!important}
+input,textarea,select{color:var(--c4)!important}
+textarea{width:100%;min-height:45px;background:var(--c2);border-radius:5px;border:1px solid var(--c3);padding:7px 1em;resize:vertical}
+#pag-nav{display:flex;gap:.6em;justify-content:center;margin:.5em 0}
+#pag-nav button{padding:.37em 1em}
+#read-track{margin:0 .7em 1em .2em;color:var(--p)}
+.theme-dark{--c1:#121212;--c2:#1f1f1f;--c3:#23272e;--c4:#fff;--b:#e0e0e0}
+.theme-light{--c1:#f8fafd;--c2:#f2f6fb;--c3:#e2e6ef;--c4:#292929;--b:#bababa}
+.theme-blue{--c1:#181f2c;--c2:#212f4a;--c3:#25335a;--c4:#fff;--b:#bababa}
+#read-mode-btn{margin-right:.3em}
+select,option{background:var(--c3)}
+input[type="file"]{display:none}
+#toast{position:fixed;bottom:2em;left:50%;transform:translateX(-50%);background:var(--p);color:var(--c4);padding:.8em 1.5em;border-radius:7px;opacity:0;pointer-events:none;z-index:99;transition:opacity .45s}
+#toast.show{opacity:1}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600&family=Amiri:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="loading" style="display:flex;flex-direction:column;text-align:center;gap:0.7em">
+<span id="loading-msg">Quran data setup...</span>
+<div id="progress-bar"><div id="progress"></div></div>
+</div>
+<div id="toast"></div>
+<div id="app" style="display:none">
+<header id="navbar">
+<div style="display:flex;align-items:center;gap:.7em">
+<button id="menu-btn" data-action="menu" aria-label="Menu">☰</button>
+<b id="apptitle">القرآن</b>
+</div>
+<div>
+<button id="read-mode-btn" data-action="readingmode" title="Reading Mode">📖</button>
+<button id="search-btn" data-action="search" title="Search">🔍</button>
+<button id="bookmark-btn" data-action="bookmarks" title="Bookmarks">🔖</button>
+<button id="settings-btn" data-action="settings" title="Settings">⚙️</button>
+</div>
+</header>
+<main id="main"></main>
+<footer>
+<nav style="width:100%;display:flex;gap:2%">
+<button data-action="surahs" style="flex:1">سورۃ</button>
+<button data-action="bookmarks" style="flex:1">نشانات</button>
+<button data-action="reminders" style="flex:1">یاددہانی</button>
+<button data-action="reports" style="flex:1">رپورٹ</button>
+<button data-action="history" style="flex:1">تاریخ</button>
+</nav>
+</footer>
+</div>
+<input type="file" id="import-file" accept="application/json">
+<script>
+const DB_NAME='quranDB', DB_VER=7, STORE_AYAHS='ayahs', STORE_BOOKMARKS='bookmarks', STORE_SETTINGS='settings', STORE_NOTES='notes', STORE_HISTORY='history', STORE_REMINDERS='reminders', STORE_SESSIONS='sessions', STORE_READPROGRESS='readtrack';
+const surahNames=["الفاتحہ","البقرہ","آل عمران","النساء","المائدہ","الانعام","الاعراف","الانفال","التوبہ","یونس","ہود","یوسف","الرعد","ابراہیم","الحجر","النحل","اسراء","الکہف","مریم","طہ","الانبیاء","الحج","المومنون","النور","الفرقان","الشعراء","النمل","القصص","العنکبوت","الروم","لقمان","السجدہ","الاحزاب","سبا","فاطر","یٰس","الصافات","ص","الزمر","المومن","حم السجدہ","الشوری","الزخرف","الدخان","الجاثیہ","الاحقاف","محمد","الفتح","الحجرات","ق","الذاریات","الطور","النجم","القمر","الرحمن","الواقعہ","الحدید","المجادلہ","الحشر","الممتحنہ","الصف","الجمعہ","المنافقون","التغابن","الطلاق","التحریم","الملک","القلم","الحاقہ","المعارج","نوح","الجن","المزمل","المدثر","القیامہ","الانسان","المرسلات","النبا","النازعات","عبس","التکویر","الانفطار","المطففین","الانشقاق","البروج","الطارق","الاعلی","الغاشیہ","الفجر","البلد","الشمس","اللیل","الضحی","الشرح","التین","العلق","القدر","البینہ","الزلزال","العادیات","القارعہ","التکاثر","العصر","الہمزہ","الفیل","قریش","المائعون","الکوثر","الکافرون","النصر","المسد","الاخلاص","الفلق","الناس"];
+let db,ayahCache={},settings={theme:'theme-dark',fontSize:19,showUr:true,showAr:true,lang:'ur',linesPerPage:8,view:'ayah',contentMode:'full'},readingSessions=[],history=[],readProgress={},bookmarks={},notes={},reminders=[],surahIndex=null,lastPos={s:1,a:1},searchResult=[],searchLast='';
+const el=sel=>document.querySelector(sel),els=sel=>Array.from(document.querySelectorAll(sel)),IDB=window.indexedDB;
+function openDB(){return new Promise((res,rej)=>{const r=IDB.open(DB_NAME,DB_VER);r.onerror=e=>rej(e.target.error);r.onsuccess=e=>{db=r.result;res(db)};r.onupgradeneeded=e=>{const db=e.target.result;a=db.createObjectStore;if(!db.objectStoreNames.contains(STORE_AYAHS))a(STORE_AYAHS,{keyPath:'id'});if(!db.objectStoreNames.contains(STORE_BOOKMARKS))a(STORE_BOOKMARKS,{keyPath:'id'});if(!db.objectStoreNames.contains(STORE_NOTES))a(STORE_NOTES,{keyPath:'id'});if(!db.objectStoreNames.contains(STORE_SETTINGS))a(STORE_SETTINGS,{keyPath:'key'});if(!db.objectStoreNames.contains(STORE_HISTORY))a(STORE_HISTORY,{keyPath:'id',autoIncrement:!0});if(!db.objectStoreNames.contains(STORE_READPROGRESS))a(STORE_READPROGRESS,{keyPath:'id'});if(!db.objectStoreNames.contains(STORE_REMINDERS))a(STORE_REMINDERS,{keyPath:'id',autoIncrement:!0});if(!db.objectStoreNames.contains(STORE_SESSIONS))a(STORE_SESSIONS,{keyPath:'id',autoIncrement:!0});}})}
+function idbWrite(store,data){return new Promise((res,rej)=>{const t=db.transaction([store],'readwrite'),s=t.objectStore(store),r=s.put(data);r.onerror=e=>rej(e.target.error);r.onsuccess=e=>res(e.target.result)})}
+function idbBulk(store,data){return new Promise((res,rej)=>{const t=db.transaction([store],'readwrite'),s=t.objectStore(store);for(let d of data)s.put(d);t.oncomplete=()=>res();t.onerror=e=>rej(e.target.error)})}
+function idbGet(store,key){return new Promise((res,rej)=>{const t=db.transaction([store],'readonly'),s=t.objectStore(store),r=s.get(key);r.onerror=e=>rej(e.target.error);r.onsuccess=e=>res(r.result)})}
+function idbGetAll(store){return new Promise((res,rej)=>{const t=db.transaction([store],'readonly'),s=t.objectStore(store),r=s.getAll();r.onerror=e=>rej(e.target.error);r.onsuccess=e=>res(r.result)})}
+function idbDel(store,key){return new Promise((res,rej)=>{const t=db.transaction([store],'readwrite'),s=t.objectStore(store),r=s.delete(key);r.onerror=e=>rej(e.target.error);r.onsuccess=e=>res()})}
+function idbClear(store){return new Promise((res,rej)=>{const t=db.transaction([store],'readwrite'),s=t.objectStore(store),r=s.clear();r.onerror=e=>rej(e.target.error);r.onsuccess=e=>res()})}
+async function loadSettings(){const d=await idbGetAll(STORE_SETTINGS);if(d.length)d.forEach(s=>settings[s.key]=s.value);applySettings()}
+async function saveSetting(key,val){settings[key]=val;await idbWrite(STORE_SETTINGS,{key,value:val});applySettings()}
+function applySettings(){document.body.className=settings.theme;document.documentElement.style.setProperty('--fs',settings.fontSize+'px')}
+function showToast(msg){const t=el('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2100)}
+async function importAppData(json){const data=JSON.parse(json);if(data.bookmarks){await idbClear(STORE_BOOKMARKS);for(const b of data.bookmarks)await idbWrite(STORE_BOOKMARKS,b)}
+if(data.readProgress){await idbClear(STORE_READPROGRESS);for(const r of data.readProgress)await idbWrite(STORE_READPROGRESS,r)}
+if(data.settings){await idbClear(STORE_SETTINGS);for(const s in data.settings)await idbWrite(STORE_SETTINGS,{key:s,value:data.settings[s]})}
+if(data.notes){await idbClear(STORE_NOTES);for(const n of data.notes)await idbWrite(STORE_NOTES,n)}
+if(data.reminders){await idbClear(STORE_REMINDERS);for(const r of data.reminders)await idbWrite(STORE_REMINDERS,r)}
+if(data.history){await idbClear(STORE_HISTORY);for(const h of data.history)await idbWrite(STORE_HISTORY,h)}
+if(data.sessions){await idbClear(STORE_SESSIONS);for(const s of data.sessions)await idbWrite(STORE_SESSIONS,s)}
+showToast('امپورٹ مکمل')}
+async function exportAppData(){const [bm,pr,st,nt,rm,hs,ss]=await Promise.all([idbGetAll(STORE_BOOKMARKS),idbGetAll(STORE_READPROGRESS),idbGetAll(STORE_SETTINGS),idbGetAll(STORE_NOTES),idbGetAll(STORE_REMINDERS),idbGetAll(STORE_HISTORY),idbGetAll(STORE_SESSIONS)]);const obj={bookmarks:bm,readProgress:pr,settings:Object.fromEntries(st.map(x=>[x.key,x.value])),notes:nt,reminders:rm,history:hs,sessions:ss};const js=JSON.stringify(obj);const bl=new Blob([js],{type:'application/json'});const url=URL.createObjectURL(bl);const a=document.createElement('a');a.href=url;a.download='quranAppData-'+Date.now()+'.json';a.click();URL.revokeObjectURL(url)}
+function parseAyahLine(line){let ar='',ur='',sn=0,an=0;if(!line)return null;let m=line.match(/(.*?) ترجمہ: (.*?)س\s*(\d+) آ\s*(\d+)$/);if(!m)return null;ar=m[1].trim();ur=m[2].trim();sn=parseInt(m[3]);an=parseInt(m[4]);return{ar,ur,surah:sn,ayah:an,id:`${sn}_${an}`}}
+async function setupData(){el('#loading').style.display='flex';el('#loading-msg').textContent='Quran data setup...';const res=await fetch('data/data.AM');const txt=await res.text();const lines=txt.split(/\r?\n/).filter(x=>x.trim().length>8);const ayhs=[];let c=0;for(let i=0;i<lines.length;++i){const a=parseAyahLine(lines[i]);if(a){ayhs.push(a);if(i%30===0){el('#progress').style.width=(i/lines.length*100)+'%'}c++}}el('#progress').style.width='100%';await idbBulk(STORE_AYAHS,ayhs);localStorage.setItem('quran_loaded','1')}
+async function loadAyahs(){const all=await idbGetAll(STORE_AYAHS);ayahCache={};for(let ayh of all){const sid=ayh.surah;if(!ayahCache[sid])ayahCache[sid]=[];ayahCache[sid].push(ayh)}}
+async function cacheBookmarks(){bookmarks={};let all=await idbGetAll(STORE_BOOKMARKS);for(const b of all)bookmarks[b.id]=b}
+async function cacheReadTrack(){readProgress={};let all=await idbGetAll(STORE_READPROGRESS);for(const r of all)readProgress[r.id]=r}
+async function cacheNotes(){notes={};let all=await idbGetAll(STORE_NOTES);for(const n of all)notes[n.id]=n}
+async function cacheReminders(){reminders=await idbGetAll(STORE_REMINDERS)}
+async function cacheHistory(){history=await idbGetAll(STORE_HISTORY)}
+async function cacheSessions(){readingSessions=await idbGetAll(STORE_SESSIONS)}
+function surahCount(){return Object.keys(ayahCache).length}
+function ayahCount(s){return ayahCache[s]?ayahCache[s].length:0}
+function surahTitle(i){return (i)+'. '+surahNames[i-1]}
+function formatAyahNum(s,a){return s+'-'+a}
+function isBookmarked(id){return !!bookmarks[id]}
+function isRead(id){return !!readProgress[id]}
+function getNote(id){return notes[id]?notes[id].note:''}
+function uniqid(){return Date.now()+''+Math.floor(Math.random()*9000)}
+function gotoSurahAyah(s,a){lastPos={s,a};showSurah(s,a)}
+function showSurahs(){let html='<div class="surah-list">';for(let i=1;i<=114;++i){html+=`<div class="surah-btn" data-surah="${i}">${surahTitle(i)}</div>`}html+='</div>';el('#main').innerHTML=html;els('.surah-btn').forEach(e=>e.onclick=ev=>{gotoSurahAyah(parseInt(e.dataset.surah),1)})}
+function ayahCard(ay,pos,opts={}){let mark=isBookmarked(ay.id)?'marked':'';let read=isRead(ay.id)?'style="opacity:.83"':'';let note=getNote(ay.id),noted=note.length>0;let ur=settings.showUr?`<div class="ayah-ur">${opts.hlUr||ay.ur}</div>`:'';let ar=settings.showAr?`<div class="ayah-ar">${opts.hlAr||ay.ar}</div>`:'';let actions=`
+<div class="ayah-actions">
+<button data-action="bkm" data-id="${ay.id}" class="${mark}">🔖</button>
+<button data-action="read" data-id="${ay.id}">✅</button>
+<button data-action="note" data-id="${ay.id}">${noted?'🗒️':'✍️'}</button>
+<button data-action="share" data-id="${ay.id}">📤</button>
+</div>`;return `<div class="ayah-card" data-idx="${pos}"${read}>${ar}${ur}${actions}</div>`}
+function ayahListHTML(s,ayStart,ayEnd,opts={}){let list=ayahCache[s];if(!list)return'';let html='';for(let i=ayStart-1;i<ayEnd&&i<list.length;++i){html+=ayahCard(list[i],i+1,opts)}return html}
+function showSurah(s,a=1){if(!ayahCache[s])return showSurahs();let list=ayahCache[s],html=`<div style="font-size:1.2em;text-align:center"><b>${surahTitle(s)}</b></div><div id="read-track">${readProgressCount(s)}/${list.length} آیات</div><div class="ayah-list">`;for(let i=0;i<list.length;++i){html+=ayahCard(list[i],i+1)}html+='</div>';el('#main').innerHTML=html;scrollToAyah(a);bindAyahActions()}
+function scrollToAyah(a){setTimeout(()=>{let c=el(`.ayah-card[data-idx="${a}"]`);if(c)c.scrollIntoView({block:"center",behavior:"smooth"})},50)}
+function showBookmarks(){let b=Object.values(bookmarks),html='<h3>نشانات</h3><div id="bookmarks">';if(b.length===0)html+='کوئی نشان نہیں';else for(let bk of b){let ay=ayahCache[bk.s]?ayahCache[bk.s].find(a=>a.ayah===bk.a):null;if(!ay)continue;html+=`<div class="bkm-item"><span>${surahTitle(bk.s)} - ${bk.a}: ${ay.ar.slice(0,33)}...</span><span><button data-action="goto" data-s="${bk.s}" data-a="${bk.a}">کھولیں</button><button data-action="bkm" data-id="${bk.id}">❌</button></span></div>`}html+='</div>';el('#main').innerHTML=html;els('[data-action="goto"]').forEach(e=>e.onclick=ev=>gotoSurahAyah(parseInt(e.dataset.s),parseInt(e.dataset.a)));els('[data-action="bkm"]').forEach(e=>e.onclick=async ev=>{await removeBookmark(e.dataset.id);showBookmarks()})}
+async function removeBookmark(id){await idbDel(STORE_BOOKMARKS,id);await cacheBookmarks();showToast("نشان ہٹا دیا گیا")}
+function showSettings(){let optTheme=['theme-dark','theme-light','theme-blue'].map(t=>`<option value="${t}"${settings.theme===t?' selected':''}>${t==='theme-dark'?'ڈارک':t==='theme-light'?'روشنی':'نیلا'}</option>`).join('');let langOpt=['ur','en'].map(l=>`<option value="${l}"${settings.lang===l?' selected':''}>${l==='ur'?'اردو':'EN'}</option>`).join('');let html=`
+<div id="settings">
+<div class="settings-row"><label>یوزر انٹرفیس زبان</label><select id="langSel">${langOpt}</select></div>
+<div class="settings-row"><label>تھیم</label><select id="themeSel">${optTheme}</select></div>
+<div class="settings-row"><label>فونٹ سائز</label><input id="fsSlider" type="range" min="15" max="30" value="${settings.fontSize}"><span>${settings.fontSize}</span></div>
+<div class="settings-row"><label>سطریں فی صفحہ</label><input id="lpSlider" type="range" min="3" max="25" value="${settings.linesPerPage}"><span>${settings.linesPerPage}</span></div>
+<div class="settings-row"><label>عربی دکھائیں</label><input id="arChk" type="checkbox"${settings.showAr?' checked':''}></div>
+<div class="settings-row"><label>ترجمہ دکھائیں</label><input id="urChk" type="checkbox"${settings.showUr?' checked':''}></div>
+<div class="settings-row"><label>مواد موڈ</label>
+<select id="contentModeSel">
+<option value="full"${settings.contentMode==='full'?' selected':''}>تمام</option>
+<option value="minimal"${settings.contentMode==='minimal'?' selected':''}>کم سے کم</option>
+</select>
+</div>
+<div class="settings-row"><button id="export-btn">ڈیٹا ایکسپورٹ</button><button id="import-btn">ڈیٹا امپورٹ</button></div>
+</div>
+`;el('#main').innerHTML=html;
+el('#langSel').onchange=e=>saveSetting('lang',e.target.value);
+el('#themeSel').onchange=e=>saveSetting('theme',e.target.value);
+el('#fsSlider').oninput=e=>{el('#fsSlider').nextElementSibling.textContent=e.target.value;saveSetting('fontSize',e.target.value)};
+el('#lpSlider').oninput=e=>{el('#lpSlider').nextElementSibling.textContent=e.target.value;saveSetting('linesPerPage',parseInt(e.target.value))};
+el('#arChk').onchange=e=>saveSetting('showAr',e.target.checked);
+el('#urChk').onchange=e=>saveSetting('showUr',e.target.checked);
+el('#contentModeSel').onchange=e=>saveSetting('contentMode',e.target.value);
+el('#export-btn').onclick=exportAppData;
+el('#import-btn').onclick=()=>el('#import-file').click()}
+function renderHome(){showSurahs()}
+function normalizeText(t){return t.replace(/[\u064b-\u065f\u0670\u06d6-\u06ed]/g,'').replace(/[^\w\sء-ياآ]+/g,'').replace(/\s+/g,'')}
+async function searchAyahs(q){if(!q||q.length<2)return[];let nq=normalizeText(q);let all=await idbGetAll(STORE_AYAHS);let res=[];for(let a of all){let nar=normalizeText(a.ar),nur=normalizeText(a.ur);if(nar.includes(nq)||nur.includes(nq))res.push(a)}return res}
+function highlightTxt(txt, q){if(!q)return txt;let n=normalizeText(q),reg=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),t=txt.replace(reg,'<span class="hl">$&</span>');if(t===txt){let nreg=new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig');let ntxt=normalizeText(txt);let rep=ntxt.replace(nreg,'<span class="hl">$&</span>');if(rep!==ntxt){return rep}}return t}
+async function showSearch(q=''){let html=`<div id="search"><input id="searchtext" value="${q||''}" placeholder="تلاش کریں..."><button id="searchgo">🔍</button></div><div id="search-results">`;if(q.length>1){const res=await searchAyahs(q);searchResult=res;html+=`<div>${res.length} نتائج:</div>`;for(const ay of res){let hlAr=highlightTxt(ay.ar,q),hlUr=highlightTxt(ay.ur,q);html+=ayahCard(ay,0,{hlAr,hlUr})}}html+='</div>';el('#main').innerHTML=html;el('#searchgo').onclick=()=>showSearch(el('#searchtext').value);el('#searchtext').onkeydown=e=>{if(e.key==='Enter')showSearch(e.target.value)};bindAyahActions()}
+function bindAyahActions(){els('.ayah-actions button').forEach(btn=>{btn.onclick=async e=>{let id=btn.dataset.id;if(e.target.dataset.action==='bkm'){if(isBookmarked(id)){await idbDel(STORE_BOOKMARKS,id)}else{let [s,a]=id.split('_').map(Number);await idbWrite(STORE_BOOKMARKS,{id,s,a,dt:Date.now()})}await cacheBookmarks();btn.classList.toggle('marked');showToast(isBookmarked(id)?'نشان لگایا گیا':'نشان ہٹایا گیا')}
+else if(e.target.dataset.action==='read'){await idbWrite(STORE_READPROGRESS,{id,dt:Date.now()});await cacheReadTrack();btn.parentElement.parentElement.style.opacity='.83';showToast('پڑھا گیا')}
+else if(e.target.dataset.action==='note'){editNote(id)}
+else if(e.target.dataset.action==='share'){shareAyah(id)}})}
+function readProgressCount(s){let c=0;const arr=ayahCache[s];if(!arr)return 0;for(const ay of arr)if(isRead(ay.id))++c;return c}
+function editNote(id){let ay=null;for(const s in ayahCache){ay=ayahCache[s].find(a=>a.id===id);if(ay)break}let note=getNote(id)||'';let html=`<div class="notes"><div><b>${ay.ar}</b></div><textarea id="notearea">${note}</textarea><div style="margin-top:.7em"><button id="savenote">محفوظ کریں</button><button id="delnote">حذف</button></div></div>`;el('#main').innerHTML=html;el('#savenote').onclick=async()=>{await idbWrite(STORE_NOTES,{id,note:el('#notearea').value,dt:Date.now()});await cacheNotes();showToast('نوٹ محفوظ ہوا');renderHome()};el('#delnote').onclick=async()=>{await idbDel(STORE_NOTES,id);await cacheNotes();showToast('نوٹ حذف ہوا');renderHome()}}
+async function shareAyah(id){let ay=null;for(const s in ayahCache){ay=ayahCache[s].find(a=>a.id===id);if(ay)break}if(!ay)return;let txt=`${ay.ar}\n\n${ay.ur}\n\n(${surahTitle(ay.surah)}:${ay.ayah})`;if(navigator.share)try{await navigator.share({text:txt});showToast('شیئر کیا گیا')}catch{}else{navigator.clipboard.writeText(txt);showToast('کلپ بورڈ پر کاپی کیا گیا')}}
+function showReadingMode(){document.body.classList.add('fullscreen');let s=lastPos.s,a=lastPos.a,m=settings.view==='page'?'page':'ayah';showReadingContent(s,a,m)}
+function exitReadingMode(){document.body.classList.remove('fullscreen');renderHome()}
+function showReadingContent(s,a,mode){const lp=settings.linesPerPage;let list=ayahCache[s];if(!list)return;let start=mode==='page'?((Math.ceil(a/lp)-1)*lp):a-1,end=mode==='page'?(start+lp):a;let html=`<div class="ayah-list" style="font-size:1.22em;margin-top:0">`;for(let i=start;i<end&&i<list.length;++i){html+=ayahCard(list[i],i+1)}html+='</div><div id="pag-nav">';if(mode==='page'){if(start>0)html+=`<button id="prevpg">پچھلا صفحہ</button>`;if(end<list.length)html+=`<button id="nextpg">اگلا صفحہ</button>`}else{if(a>1)html+=`<button id="prevay">پچھلا</button>`;if(a<list.length)html+=`<button id="nextay">اگلا</button>`}html+=`<button id="fsexit">باہر</button></div>`;el('#main').innerHTML=html;bindAyahActions();el('#fsexit').onclick=exitReadingMode;if(mode==='page'){if(el('#prevpg'))el('#prevpg').onclick=()=>showReadingContent(s,Math.max(a-lp,1),'page');if(el('#nextpg'))el('#nextpg').onclick=()=>showReadingContent(s,a+lp,'page')}else{if(el('#prevay'))el('#prevay').onclick=()=>showReadingContent(s,a-1,'ayah');if(el('#nextay'))el('#nextay').onclick=()=>showReadingContent(s,a+1,'ayah')}}
+function showReminders(){let html='<h3>یاد دہانیاں</h3><div id="reminders">';if(reminders.length===0)html+='کچھ نہیں';else for(const r of reminders){html+=`<div class="bkm-item"><span>${r.time} - ${r.text}</span><button data-action="delrem" data-id="${r.id}">❌</button></div>`}html+=`<div style="margin-top:.7em"><input id="remtime" type="time"><input id="remtxt" placeholder="تحریر"><button id="addrem">+یاددہانی</button></div></div>`;el('#main').innerHTML=html;el('#addrem').onclick=async()=>{let tm=el('#remtime').value,txt=el('#remtxt').value;if(!tm||!txt)return;await idbWrite(STORE_REMINDERS,{time:tm,text:txt,id:uniqid()});await cacheReminders();showReminders();showToast('یاد دہانی شامل')};els('[data-action="delrem"]').forEach(e=>e.onclick=async ev=>{await idbDel(STORE_REMINDERS,e.dataset.id);await cacheReminders();showReminders();showToast('ڈیلیٹڈ')})}
+function showReports(){let html='<h3>پڑھائی کی رپورٹ</h3><div id="reports">';let days={},months={},years={};let all=Object.values(readProgress);for(let r of all){let d=new Date(r.dt),k1=d.toISOString().slice(0,10),k2=k1.slice(0,7),y=k1.slice(0,4);days[k1]=(days[k1]||0)+1;months[k2]=(months[k2]||0)+1;years[y]=(years[y]||0)+1}html+='<div><b>دن بہ دن:</b></div>';for(const k in days)html+=`<div>${k}: ${days[k]}</div>`;html+='<div style="margin-top:1em"><b>ماہ بہ ماہ:</b></div>';for(const k in months)html+=`<div>${k}: ${months[k]}</div>`;html+='<div style="margin-top:1em"><b>سال بہ سال:</b></div>';for(const k in years)html+=`<div>${k}: ${years[k]}</div>`;html+='</div>';el('#main').innerHTML=html}
+function showHistory(){let html='<h3>تاریخ</h3><div id="history">';let all=history.sort((a,b)=>b.dt-a.dt).slice(0,33);for(const h of all){let s=h.s,a=h.a,dt=new Date(h.dt).toLocaleString(),txt=ayahCache[s]?ayahCache[s][a-1].ar.slice(0,50):'';html+=`<div class="bkm-item"><span>${surahTitle(s)} - ${a}: ${txt} <span style="color:gray;font-size:.8em">(${dt})</span></span><button data-action="goto" data-s="${s}" data-a="${a}">کھولیں</button></div>`}html+='</div>';el('#main').innerHTML=html;els('[data-action="goto"]').forEach(e=>e.onclick=ev=>gotoSurahAyah(parseInt(e.dataset.s),parseInt(e.dataset.a)))}
+el('#menu-btn').onclick=renderHome;
+el('#read-mode-btn').onclick=showReadingMode;
+el('#bookmark-btn').onclick=showBookmarks;
+el('#settings-btn').onclick=showSettings;
+el('#search-btn').onclick=()=>showSearch('');
+els('footer button').forEach(btn=>btn.onclick=()=>{
+if(btn.dataset.action==='surahs')renderHome();
+if(btn.dataset.action==='bookmarks')showBookmarks();
+if(btn.dataset.action==='reminders')showReminders();
+if(btn.dataset.action==='reports')showReports();
+if(btn.dataset.action==='history')showHistory();
+})
+el('#import-file').onchange=async e=>{let f=e.target.files[0];if(f){let txt=await f.text();await importAppData(txt);await Promise.all([cacheBookmarks(),cacheReadTrack(),cacheNotes(),cacheReminders(),cacheHistory(),cacheSessions()]);showSettings()}};
+function initReminders(){setInterval(async()=>{let now=new Date(),tm=now.toTimeString().slice(0,5);for(let r of reminders)if(r.time===tm){showToast('یاد دہانی: '+r.text)}},60000)}
+function updateHistory(s,a){let item={s,a,dt:Date.now(),id:uniqid()};idbWrite(STORE_HISTORY,item).then(()=>cacheHistory())}
+window.addEventListener('popstate',e=>{renderHome()});
+if('serviceWorker'in navigator){navigator.serviceWorker.register(URL.createObjectURL(new Blob([`
+self.addEventListener('install',e=>{self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
+self.addEventListener('fetch',e=>{e.respondWith(caches.open('QuranAppCache').then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(e.request.url.includes('data.AM')){c.put(e.request,res.clone())}return res}))));});
+`],{type:'application/javascript'})),{scope:'./'});}
+(async function startup(){await openDB();if(!localStorage.getItem('quran_loaded')){await setupData()}await Promise.all([loadAyahs(),loadSettings(),cacheBookmarks(),cacheReadTrack(),cacheNotes(),cacheReminders(),cacheHistory(),cacheSessions()]);el('#loading').style.opacity=0;setTimeout(()=>el('#loading').style.display='none',500);el('#app').style.display='block';applySettings();renderHome();initReminders()})();
+</script>
+</body>
+</html>

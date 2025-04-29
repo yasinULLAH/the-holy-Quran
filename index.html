@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Quran App</title>
+    <style>
+        :root {
+            --bg-color-light: #e0e5ec;
+            --text-color-light: #333;
+            --primary-color-light: #6d5dfc;
+            --highlight-color-light: rgba(109, 93, 252, 0.2);
+            --neumorph-shadow-light-1: inset 5px 5px 10px #a3b1c6, inset -5px -5px 10px #ffffff;
+            --neumorph-shadow-light-2: 5px 5px 10px #a3b1c6, -5px -5px 10px #ffffff;
+            --glass-bg-light: rgba(255, 255, 255, 0.5);
+            --glass-border-light: rgba(255, 255, 255, 0.3);
+
+            --bg-color-dark: #1a1a1a;
+            --text-color-dark: #e0e0e0;
+            --primary-color-dark: #ffd700;
+            --highlight-color-dark: rgba(255, 215, 0, 0.2);
+            --neumorph-shadow-dark-1: inset 4px 4px 8px #0d0d0d, inset -4px -4px 8px #272727;
+            --neumorph-shadow-dark-2: 4px 4px 8px #0d0d0d, -4px -4px 8px #272727;
+            --glass-bg-dark: rgba(40, 40, 40, 0.6);
+            --glass-border-dark: rgba(255, 215, 0, 0.2);
+
+            --bg-color: var(--bg-color-light);
+            --text-color: var(--text-color-light);
+            --primary-color: var(--primary-color-light);
+            --highlight-color: var(--highlight-color-light);
+            --neumorph-shadow-1: var(--neumorph-shadow-light-1);
+            --neumorph-shadow-2: var(--neumorph-shadow-light-2);
+            --glass-bg: var(--glass-bg-light);
+            --glass-border: var(--glass-border-light);
+
+            --font-size-base: 16px;
+            --font-size-arabic: 1.8rem;
+            --font-size-urdu: 1.2rem;
+            --line-height-arabic: 2.5;
+            --line-height-urdu: 1.8;
+
+            --bottom-nav-height: 60px;
+            --header-height: 50px;
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        [data-theme="dark"] {
+            --bg-color: var(--bg-color-dark);
+            --text-color: var(--text-color-dark);
+            --primary-color: var(--primary-color-dark);
+            --highlight-color: var(--highlight-color-dark);
+            --neumorph-shadow-1: var(--neumorph-shadow-dark-1);
+            --neumorph-shadow-2: var(--neumorph-shadow-dark-2);
+            --glass-bg: var(--glass-bg-dark);
+            --glass-border: var(--glass-border-dark);
+        }
+        [lang="ur"] { --font-family-urdu: 'Noto Nastaliq Urdu', serif; font-family: var(--font-family-urdu); }
+        [lang="en"] { --font-family-en: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-family: var(--font-family-en); }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { font-size: var(--font-size-base); scroll-behavior: smooth; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overscroll-behavior-y: contain;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .app-container { display: flex; flex-direction: column; height: 100%; width: 100%; }
+        .main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: calc(var(--header-height) + 10px + var(--safe-area-top)) 15px calc(var(--bottom-nav-height) + 10px + var(--safe-area-bottom));
+            position: relative;
+        }
+        .page { display: none; flex-direction: column; gap: 15px; }
+        .page.active { display: flex; }
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--header-height) + var(--safe-area-top));
+            padding-top: var(--safe-area-top);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .header-title { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+            padding-bottom: var(--safe-area-bottom);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 5px;
+            font-size: 0.7rem;
+            opacity: 0.7;
+            transition: opacity 0.2s ease, color 0.2s ease;
+            flex-grow: 1;
+            height: 100%;
+             white-space: nowrap;
+        }
+        .nav-item.active { opacity: 1; color: var(--primary-color); font-weight: bold; }
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 2px; fill: currentColor; }
+        .loader-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; padding: 20px;}
+        .loader { border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader-text { margin-top: 15px; color: var(--text-color); }
+        .surah-list, .ayah-list, .bookmark-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+        .list-item {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: var(--neumorph-shadow-2);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .list-item:active { transform: scale(0.98); box-shadow: var(--neumorph-shadow-1); }
+        .surah-info { display: flex; align-items: center; gap: 10px; }
+        .surah-number {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        [data-theme="dark"] .surah-number { color: #000; }
+        .surah-name { font-weight: bold; }
+        .surah-details { font-size: 0.8rem; opacity: 0.7; }
+        .ayah-item {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: var(--neumorph-shadow-2);
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s ease;
+            position: relative;
+        }
+        .ayah-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; opacity: 0.8; font-size: 0.9rem; }
+        .ayah-controls button { background: none; border: none; cursor: pointer; color: var(--text-color); padding: 5px; opacity: 0.7; display: inline-flex; align-items: center; justify-content: center;}
+        .ayah-controls button.active { color: var(--primary-color); opacity: 1; }
+        .ayah-text-arabic { font-size: var(--font-size-arabic); line-height: var(--line-height-arabic); text-align: right; margin-bottom: 10px; direction: rtl; font-family: 'Amiri Quran', serif; }
+        .ayah-text-urdu { font-size: var(--font-size-urdu); line-height: var(--line-height-urdu); text-align: right; direction: rtl; font-family: 'Noto Nastaliq Urdu', serif; }
+        .ayah-item.read { border-left: 5px solid var(--primary-color); opacity: 0.8; }
+        .ayah-item mark { background-color: var(--highlight-color); padding: 0.1em 0; border-radius: 3px; }
+        .search-input-container { position: relative; margin-bottom: 15px; }
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 25px;
+            border: none;
+            background: var(--bg-color);
+            box-shadow: var(--neumorph-shadow-1);
+            font-size: 1rem;
+            color: var(--text-color);
+            outline: none;
+            transition: box-shadow 0.3s ease;
+        }
+        body[lang="ur"] .search-input { direction: rtl; text-align: right;}
+        .search-input:focus { box-shadow: var(--neumorph-shadow-2); }
+        #search-suggestions {
+             list-style: none;
+             padding: 0;
+             margin: 5px 0 0 0;
+             position: absolute;
+             width: 100%;
+             max-height: 300px;
+             overflow-y: auto;
+             background: var(--glass-bg);
+             backdrop-filter: blur(5px);
+             -webkit-backdrop-filter: blur(5px);
+             border: 1px solid var(--glass-border);
+             border-radius: 10px;
+             z-index: 50;
+             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+             text-align: right; /* Default right for suggestions */
+        }
+         body[lang="en"] #search-suggestions { text-align: left; }
+
+        #search-suggestions li { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid var(--glass-border); }
+        #search-suggestions li:last-child { border-bottom: none; }
+        #search-suggestions li:hover { background: var(--highlight-color); }
+        #search-suggestions mark { background: none; color: var(--primary-color); font-weight: bold; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(128, 128, 128, 0.2); }
+        .settings-item:last-child { border-bottom: none; }
+        .settings-item label { font-weight: bold; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 26px; transition: .4s; box-shadow: var(--neumorph-shadow-1); }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s; box-shadow: var(--neumorph-shadow-2); }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .font-size-control, .language-toggle, .ui-language-toggle { display: flex; gap: 10px; align-items: center; }
+        .font-size-control button, .language-toggle button, .ui-language-toggle button {
+             padding: 5px 10px;
+             border: none;
+             border-radius: 5px;
+             background: var(--bg-color);
+             box-shadow: var(--neumorph-shadow-2);
+             cursor: pointer;
+             transition: box-shadow 0.2s ease, background-color 0.2s ease;
+             color: var(--text-color);
+             min-width: 40px; text-align: center;
+        }
+        .font-size-control button:active, .language-toggle button:active, .ui-language-toggle button:active { box-shadow: var(--neumorph-shadow-1); }
+        .language-toggle button.active, .ui-language-toggle button.active { background-color: var(--primary-color); color: var(--bg-color); }
+        [data-theme="dark"] .language-toggle button.active, [data-theme="dark"] .ui-language-toggle button.active { color: #000; }
+        .progress-container { margin-top: 10px; }
+        .progress-bar { width: 100%; height: 8px; background-color: rgba(128, 128, 128, 0.2); border-radius: 4px; overflow: hidden; margin-top: 5px; }
+        .progress-bar-inner { height: 100%; width: 0%; background-color: var(--primary-color); border-radius: 4px; transition: width 0.5s ease; }
+        .progress-text { text-align: center; font-size: 0.8rem; margin-top: 5px; opacity: 0.8; }
+        .reading-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-color);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            touch-action: pan-y; /* Allow vertical scroll but capture horizontal */
+            overflow: hidden; /* Prevent body scroll */
+        }
+        .reading-content {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            overflow-y: auto;
+            max-height: 90%;
+            padding-bottom: 30px; /* Space for swipe indicator */
+        }
+        .reading-ayah-arabic { font-size: calc(var(--font-size-arabic) * 1.2); line-height: calc(var(--line-height-arabic) * 1.1); text-align: center; margin-bottom: 20px; direction: rtl; font-family: 'Amiri Quran', serif; }
+        .reading-ayah-urdu { font-size: calc(var(--font-size-urdu) * 1.1); line-height: calc(var(--line-height-urdu) * 1.1); text-align: center; direction: rtl; font-family: 'Noto Nastaliq Urdu', serif; }
+        .reading-mode-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-color); font-size: 2rem; cursor: pointer; opacity: 0.5; z-index: 1001; }
+        .reading-nav-overlay { position: absolute; top: 0; bottom: 0; width: 30%; cursor: pointer; z-index: 1; /* Higher than content */ }
+        .reading-nav-prev { left: 0; }
+        .reading-nav-next { right: 0; }
+        .swipe-indicator { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; opacity: 0.5; }
+        [data-display="arabic"] .ayah-text-urdu, [data-display="arabic"] .reading-ayah-urdu { display: none; }
+        [data-display="urdu"] .ayah-text-arabic, [data-display="urdu"] .reading-ayah-arabic { display: none; }
+        [data-display="both"] .ayah-text-arabic, [data-display="both"] .ayah-text-urdu,
+        [data-display="both"] .reading-ayah-arabic, [data-display="both"] .reading-ayah-urdu { display: block; }
+        @media (max-width: 600px) {
+             /* Add mobile specific styles if needed */
+        }
+        @font-face { font-family: 'Amiri Quran'; src: url('https://fonts.gstatic.com/s/amiriquran/v6/XZuz_gLSbMAb2JNdAJcQ7fD8.woff2') format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+        @font-face { font-family: 'Noto Nastaliq Urdu'; src: url('https://fonts.gstatic.com/s/notonastaliqurdu/v14/XRXJrd4E-HPER4aTA_RTl2Hr7CH6wL-N.woff2') format('woff2'); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+    </style>
+</head>
+<body data-theme="light" data-font-size="medium" data-display="both" lang="en">
+
+    <div class="app-container">
+        <header class="header">
+            <span class="header-title" data-translate-key="app_title">Quran App</span>
+        </header>
+
+        <main class="main-content">
+            <div id="page-home" class="page active">
+                <h2 data-translate-key="home_welcome">Welcome</h2>
+                <p data-translate-key="home_start_journey">Start your Quran journey.</p>
+                <div class="progress-container">
+                    <h3 data-translate-key="home_progress">Reading Progress</h3>
+                    <div class="progress-bar">
+                        <div class="progress-bar-inner" id="progress-bar-inner"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">0%</p>
+                </div>
+                <div>
+                    <h3 data-translate-key="home_last_read">Last Read</h3>
+                    <p id="last-read-info" data-translate-key="last_read_empty">Not started yet.</p>
+                    <button id="resume-reading-btn" data-translate-key="resume_reading" style="display: none; padding: 10px 15px; margin-top: 10px; background: var(--primary-color); color: var(--bg-color); border: none; border-radius: 5px; cursor: pointer; box-shadow: var(--neumorph-shadow-2);">Resume Reading</button>
+                    [data-theme="dark"] #resume-reading-btn { color: #000; }
+                </div>
+            </div>
+
+            <div id="page-surahs" class="page">
+                <ul class="surah-list" id="surah-list"></ul>
+            </div>
+
+            <div id="page-search" class="page">
+                <div class="search-input-container">
+                    <input type="text" id="search-input" class="search-input" placeholder="Search Arabic or Urdu..." data-translate-key="search_placeholder">
+                    <ul id="search-suggestions"></ul>
+                </div>
+                <div id="search-results" class="ayah-list"></div>
+                 <p id="search-no-results" style="display: none; text-align: center; opacity: 0.7;" data-translate-key="search_no_results">No results found.</p>
+                 <p id="search-error" style="display: none; text-align: center; opacity: 0.7;" data-translate-key="search_error">Error during search.</p>
+                 <p id="search-init" style="text-align: center; opacity: 0.7;" data-translate-key="search_init">Enter search term above.</p>
+            </div>
+
+            <div id="page-bookmarks" class="page">
+                <h2 data-translate-key="bookmarks_title">Bookmarks</h2>
+                <ul class="bookmark-list" id="bookmark-list"></ul>
+                 <p id="no-bookmarks-msg" style="display: none; text-align: center; opacity: 0.7;" data-translate-key="bookmarks_empty">No bookmarks added yet.</p>
+            </div>
+
+            <div id="page-settings" class="page">
+                <h2 data-translate-key="settings_title">Settings</h2>
+                 <div class="settings-item">
+                     <label data-translate-key="settings_ui_language">UI Language</label>
+                     <div class="ui-language-toggle">
+                         <button data-lang="en">EN</button>
+                         <button data-lang="ur">UR</button>
+                     </div>
+                 </div>
+                <div class="settings-item">
+                    <label for="dark-mode-toggle" data-translate-key="settings_dark_mode">Dark Mode</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <label data-translate-key="settings_font_size">Font Size</label>
+                    <div class="font-size-control">
+                        <button data-size="small" data-translate-key="settings_font_small">S</button>
+                        <button data-size="medium" data-translate-key="settings_font_medium">M</button>
+                        <button data-size="large" data-translate-key="settings_font_large">L</button>
+                    </div>
+                </div>
+                 <div class="settings-item">
+                    <label data-translate-key="settings_content_display">Content Display</label>
+                    <div class="language-toggle">
+                        <button data-display="arabic" data-translate-key="settings_display_arabic">Arabic</button>
+                        <button data-display="urdu" data-translate-key="settings_display_urdu">Urdu</button>
+                        <button data-display="both" data-translate-key="settings_display_both">Both</button>
+                    </div>
+                </div>
+                 <div class="settings-item">
+                     <button id="clear-data-btn" style="color: #ff4d4d; background: none; border: 1px solid #ff4d4d; padding: 8px 12px; border-radius: 5px; cursor: pointer;" data-translate-key="settings_clear_data">Clear All Data & Reload</button>
+                 </div>
+            </div>
+
+            <div id="page-ayahs" class="page">
+                <h2 id="ayah-view-surah-title"></h2>
+                <div id="ayah-list" class="ayah-list"></div>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="home">
+                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span data-translate-key="nav_home">Home</span>
+            </button>
+            <button class="nav-item" data-page="surahs">
+                 <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                 <span data-translate-key="nav_surahs">Surahs</span>
+            </button>
+            <button class="nav-item" data-page="search">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                 <span data-translate-key="nav_search">Search</span>
+            </button>
+            <button class="nav-item" data-page="bookmarks">
+                 <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                 <span data-translate-key="nav_bookmarks">Bookmarks</span>
+            </button>
+            <button class="nav-item" data-page="settings">
+                 <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+                 <span data-translate-key="nav_settings">Settings</span>
+            </button>
+        </nav>
+    </div>
+
+     <div class="reading-mode" id="reading-mode">
+        <button class="reading-mode-close" id="reading-mode-close">&times;</button>
+        <div class="reading-nav-overlay reading-nav-prev" id="reading-nav-prev"></div>
+        <div class="reading-nav-overlay reading-nav-next" id="reading-nav-next"></div>
+        <div class="reading-content" id="reading-content">
+            <p class="reading-ayah-arabic" dir="rtl"></p>
+            <p class="reading-ayah-urdu" dir="rtl"></p>
+        </div>
+        <div class="swipe-indicator" data-translate-key="reading_swipe">&lt; Swipe &gt;</div>
+    </div>
+
+
+    <div class="loader-container" id="loader">
+        <div class="loader"></div>
+        <p class="loader-text" id="loader-text" data-translate-key="loader_init">Initializing...</p>
+    </div>
+
+<script>
+    // NOTE: The Quran data is no longer embedded here.
+    // It will be fetched from 'data/data.AM' if needed.
+</script>
+
+<script>
+    const DB_NAME = 'quranDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'ayahs';
+    const SETTINGS_STORE_NAME = 'settings';
+    const SURAHS_COUNT = 114;
+    // TOTAL_AYAHS will be calculated dynamically after populating/counting
+    const DATA_FILE_PATH = 'data/data.AM'; // Path to the external data file
+
+    // --- UI String Translations ---
+    const translations = {
+        en: {
+            app_title: "Quran App",
+            nav_home: "Home",
+            nav_surahs: "Surahs",
+            nav_search: "Search",
+            nav_bookmarks: "Bookmarks",
+            nav_settings: "Settings",
+            home_welcome: "Welcome",
+            home_start_journey: "Start your Quran journey.",
+            home_progress: "Reading Progress",
+            home_last_read: "Last Read",
+            last_read_empty: "Not started yet.",
+            resume_reading: "Resume Reading",
+            surah_page_title: "Surahs",
+            search_title: "Search",
+            search_placeholder: "Search Arabic or Urdu...",
+            search_no_results: "No results found.",
+            search_error: "Error during search.",
+            search_init: "Enter search term above.",
+            bookmarks_title: "Bookmarks",
+            bookmarks_empty: "No bookmarks added yet.",
+            settings_title: "Settings",
+            settings_ui_language: "UI Language",
+            settings_dark_mode: "Dark Mode",
+            settings_font_size: "Font Size",
+            settings_font_small: "S",
+            settings_font_medium: "M",
+            settings_font_large: "L",
+            settings_content_display: "Content Display",
+            settings_display_arabic: "Arabic",
+            settings_display_urdu: "Urdu",
+            settings_display_both: "Both",
+            settings_clear_data: "Clear All Data & Reload",
+            reading_swipe: "< Swipe >",
+            loader_init: "Initializing...",
+            loader_fetching: "Fetching data (first time)...",
+            loader_populating: "Parsing & Storing (first time): {count}/{total}...",
+            loader_loading: "Loading...",
+            loader_clearing: "Clearing data...",
+            loader_error: "Error initializing application. Please refresh.",
+            data_fetch_error: "Error: Could not fetch Quran data file.",
+            confirm_clear_data: "Are you sure you want to clear all Quran data, bookmarks, read status, and settings? This cannot be undone and will require reloading the app.",
+            alert_clear_success: "Data cleared. The application will now reload.",
+            alert_clear_error: "Error clearing data. You might need to clear browser data manually.",
+            alert_clear_blocked: "Could not clear data because the database is still in use. Please close other instances of this app and reload, then try again.",
+            error_generic: "An error occurred.",
+            ayah: "Ayah",
+            surah_count: "{count} Ayahs" // Example for dynamic text
+        },
+        ur: {
+            app_title: "قرآن ایپ",
+            nav_home: "گھر",
+            nav_surahs: "سورتیں",
+            nav_search: "تلاش",
+            nav_bookmarks: "بک مارکس",
+            nav_settings: "ترتیبات",
+            home_welcome: "خوش آمدید",
+            home_start_journey: "اپنا قرآنی سفر شروع کریں۔",
+            home_progress: "پڑھنے کی پیشرفت",
+            home_last_read: "آخری پڑھا ہوا",
+            last_read_empty: "ابھی تک شروع نہیں کیا گیا۔",
+            resume_reading: "پڑھنا جاری رکھیں",
+            surah_page_title: "سورتیں",
+            search_title: "تلاش",
+            search_placeholder: "عربی یا اردو میں تلاش کریں...",
+            search_no_results: "کوئی نتیجہ نہیں ملا۔",
+            search_error: "تلاش کے دوران خرابی۔",
+            search_init: "اوپر تلاش کی اصطلاح درج کریں۔",
+            bookmarks_title: "بک مارکس",
+            bookmarks_empty: "ابھی تک کوئی بک مارک شامل نہیں کیا گیا۔",
+            settings_title: "ترتیبات",
+            settings_ui_language: "زبان",
+            settings_dark_mode: "ڈارک موڈ",
+            settings_font_size: "فونٹ سائز",
+            settings_font_small: "چھوٹا",
+            settings_font_medium: "درمیانہ",
+            settings_font_large: "بڑا",
+            settings_content_display: "مواد ڈسپلے",
+            settings_display_arabic: "عربی",
+            settings_display_urdu: "اردو",
+            settings_display_both: "دونوں",
+            settings_clear_data: "تمام ڈیٹا صاف کریں اور دوبارہ لوڈ کریں",
+            reading_swipe: "< سوائپ کریں >",
+            loader_init: "شروع کیا جا رہا ہے...",
+            loader_fetching: "ڈیٹا حاصل کیا جا رہا ہے (پہلی بار)...",
+            loader_populating: "تجزیہ اور ذخیرہ کرنا (پہلی بار): {count}/{total}...",
+            loader_loading: "لوڈ ہو رہا ہے۔..",
+            loader_clearing: "ڈیٹا صاف کیا جا رہا ہے۔..",
+            loader_error: "ایپلی کیشن شروع کرنے میں خرابی۔ براہ کرم ریفریش کریں۔",
+            data_fetch_error: "خرابی: قرآن ڈیٹا فائل حاصل نہیں کی جا سکی۔",
+            confirm_clear_data: "کیا آپ واقعی تمام قرآن ڈیٹا، بک مارکس، پڑھنے کی حیثیت، اور ترتیبات کو صاف کرنا چاہتے ہیں؟ یہ عمل ناقابل واپسی ہے اور ایپ کو دوبارہ لوڈ کرنے کی ضرورت ہوگی۔",
+            alert_clear_success: "ڈیٹا صاف ہو گیا۔ ایپلیکیشن اب دوبارہ لوڈ ہو گی۔",
+            alert_clear_error: "ڈیٹا صاف کرنے میں خرابی۔ آپ کو براؤزر کا ڈیٹا دستی طور پر صاف کرنے کی ضرورت پڑسکتی ہے۔",
+            alert_clear_blocked: "ڈیٹا صاف نہیں کیا جا سکا کیونکہ ڈیٹا بیس ابھی تک استعمال میں ہے۔ براہ کرم اس ایپ کی دوسری مثالیں بند کریں اور دوبارہ لوڈ کریں، پھر دوبارہ کوشش کریں۔",
+            error_generic: "ایک خرابی پیش آگئی۔",
+            ayah: "آیت",
+            surah_count: "{count} آیات"
+        }
+    };
+
+
+    const surahNames = ["Al-Fatiha", "Al-Baqarah", "Aal-e-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Taha", "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadila", "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr", "Al-Balad", "Ash-Shams", "Al-Layl", "Ad-Duha", "Ash-Sharh", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-'Adiyat", "Al-Qari'ah", "At-Takathur", "Al-'Asr", "Al-Humazah", "Al-Fil", "Quraysh", "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr", "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"];
+
+    let db;
+    let currentSurah = null;
+    let currentAyah = null;
+    let readingModeActive = false;
+    let readingModeCurrentId = null;
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let searchDebounceTimer;
+    let currentSettings = {
+        theme: 'light',
+        fontSize: 'medium',
+        display: 'both',
+        language: 'en' // Default UI language
+    };
+    let lastRead = { surah: null, ayah: null, id: null };
+    let actualTotalAyahs = 0; // Will be set after population or count
+
+    const loader = document.getElementById('loader');
+    const loaderText = document.getElementById('loader-text');
+    const pages = document.querySelectorAll('.page');
+    const navItems = document.querySelectorAll('.nav-item');
+    const headerTitle = document.querySelector('.header-title');
+    const surahListEl = document.getElementById('surah-list');
+    const ayahListEl = document.getElementById('ayah-list');
+    const ayahViewSurahTitle = document.getElementById('ayah-view-surah-title');
+    const searchInput = document.getElementById('search-input');
+    const searchSuggestionsEl = document.getElementById('search-suggestions');
+    const searchResultsEl = document.getElementById('search-results');
+    const searchNoResults = document.getElementById('search-no-results');
+    const searchError = document.getElementById('search-error');
+    const searchInit = document.getElementById('search-init');
+    const bookmarkListEl = document.getElementById('bookmark-list');
+    const noBookmarksMsg = document.getElementById('no-bookmarks-msg');
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const fontSizeControls = document.querySelector('.font-size-control');
+    const languageToggleControls = document.querySelector('.language-toggle');
+    const uiLanguageToggle = document.querySelector('.ui-language-toggle');
+    const progressBarInner = document.getElementById('progress-bar-inner');
+    const progressText = document.getElementById('progress-text');
+    const lastReadInfo = document.getElementById('last-read-info');
+    const resumeReadingBtn = document.getElementById('resume-reading-btn');
+    const readingModeEl = document.getElementById('reading-mode');
+    const readingContentEl = document.getElementById('reading-content');
+    const readingArabicEl = readingContentEl.querySelector('.reading-ayah-arabic');
+    const readingUrduEl = readingContentEl.querySelector('.reading-ayah-urdu');
+    const readingModeCloseBtn = document.getElementById('reading-mode-close');
+    const readingNavPrev = document.getElementById('reading-nav-prev');
+    const readingNavNext = document.getElementById('reading-nav-next');
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    const body = document.body;
+
+    // --- Translation Helper ---
+    function t(key, replacements = {}) {
+        let lang = currentSettings.language || 'en';
+        let text = translations[lang]?.[key] || translations.en[key] || `[${key}]`; // Fallback chain
+        for (const placeholder in replacements) {
+            text = text.replace(`{${placeholder}}`, replacements[placeholder]);
+        }
+        return text;
+    }
+
+    function updateUIText() {
+        document.querySelectorAll('[data-translate-key]').forEach(el => {
+            const key = el.dataset.translateKey;
+            const isPlaceholder = el.tagName === 'INPUT' && el.hasAttribute('placeholder');
+             const isTitle = el.hasAttribute('title'); // Check for title attribute
+
+            if (isPlaceholder) {
+                el.placeholder = t(key);
+            } else if (isTitle && key) { // Ensure key exists for titles
+                 el.title = t(key);
+             } else if (key) {
+                el.textContent = t(key);
+            }
+        });
+        // Update specific non-keyed elements or dynamic text
+        updateProgressText(); // Ensure progress text respects language
+        updateLastReadText(); // Ensure last read text respects language
+        // Set body lang attribute for CSS
+        body.lang = currentSettings.language;
+        // Update header title separately as it changes based on page context
+        updateHeaderTitle();
+    }
+
+
+    function showLoader(key = 'loader_loading', replacements = {}) {
+        loaderText.textContent = t(key, replacements);
+        loader.style.display = 'flex';
+    }
+
+    function hideLoader() {
+        loader.style.display = 'none';
+    }
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                 let store;
+                 if (!db.objectStoreNames.contains(STORE_NAME)) {
+                     store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                     store.createIndex('surah_ayah', ['surah', 'ayah'], { unique: true });
+                     store.createIndex('surah', 'surah', { unique: false });
+                     store.createIndex('arabic', 'arabic', { unique: false });
+                     store.createIndex('urdu', 'urdu', { unique: false });
+                     store.createIndex('bookmarked', 'bookmarked', { unique: false });
+                     store.createIndex('read', 'read', { unique: false });
+                 }
+                 if (!db.objectStoreNames.contains(SETTINGS_STORE_NAME)) {
+                    db.createObjectStore(SETTINGS_STORE_NAME, { keyPath: 'key' });
+                }
+            };
+            request.onsuccess = (event) => { db = event.target.result; resolve(db); };
+            request.onerror = (event) => { console.error('Database error:', event.target.errorCode); reject(event.target.error); };
+        });
+    }
+
+    function getSetting(key) {
+        return new Promise((resolve, reject) => {
+            if (!db) return reject("DB not initialized");
+            if (!db.objectStoreNames.contains(SETTINGS_STORE_NAME)) return resolve(undefined);
+            try {
+                 const transaction = db.transaction(SETTINGS_STORE_NAME, 'readonly');
+                 const store = transaction.objectStore(SETTINGS_STORE_NAME);
+                 const request = store.get(key);
+                 request.onsuccess = () => resolve(request.result ? request.result.value : undefined);
+                 request.onerror = (event) => reject(event.target.error);
+            } catch (e) { reject(`Error creating settings transaction: ${e}`); }
+        });
+    }
+
+    function setSetting(key, value) {
+        return new Promise((resolve, reject) => {
+            if (!db) return reject("DB not initialized");
+            if (!db.objectStoreNames.contains(SETTINGS_STORE_NAME)) return reject("Settings store not found.");
+            try {
+                const transaction = db.transaction(SETTINGS_STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(SETTINGS_STORE_NAME);
+                const request = store.put({ key, value });
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject(event.target.error);
+             } catch (e) { reject(`Error creating settings transaction: ${e}`); }
+        });
+    }
+
+    function checkDBPopulated() {
+        return new Promise(async (resolve, reject) => {
+             // First check the flag in settings
+             try {
+                const populatedFlag = await getSetting('db_populated');
+                if (populatedFlag) {
+                     // If flag is true, verify by counting (more robust)
+                     if (!db || !db.objectStoreNames.contains(STORE_NAME)) {
+                         console.warn("DB populated flag is true, but store not found. Re-populating.");
+                         await setSetting('db_populated', false); // Reset flag
+                         return resolve(false);
+                     }
+                     const transaction = db.transaction(STORE_NAME, 'readonly');
+                     const store = transaction.objectStore(STORE_NAME);
+                     const countRequest = store.count();
+                     countRequest.onsuccess = () => {
+                         actualTotalAyahs = countRequest.result;
+                         if (actualTotalAyahs > 0) {
+                             console.log(`Database verified populated with ${actualTotalAyahs} records.`);
+                             resolve(true);
+                         } else {
+                             console.warn("DB populated flag is true, but count is 0. Re-populating.");
+                             setSetting('db_populated', false).finally(() => resolve(false)); // Reset flag
+                         }
+                     };
+                     countRequest.onerror = (event) => {
+                         console.error('Error counting records for verification:', event.target.error);
+                         resolve(false); // Assume not populated if count fails
+                     };
+                 } else {
+                     resolve(false); // Flag is false or undefined
+                 }
+             } catch (error) {
+                 console.error("Error checking populated status:", error);
+                 resolve(false); // Assume not populated on error
+             }
+        });
+    }
+
+
+function fetchAndPopulateDB() {
+    return new Promise(async (resolve, reject) => {
+        showLoader('loader_fetching');
+        try {
+            const response = await fetch(DATA_FILE_PATH);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.text();
+            showLoader('loader_populating', { count: 0, total: '?' });
+
+            // Normalize line endings and split
+            const lines = data.replace(/\r\n|\r/g, '\n').trim().split('\n');
+            const regex = /^(.*?)(?:ترجمہ:\s*(.*?))?\s*(?:<br\s*\/?>)?\s*س\s*(\d+)\s*آ\s*(\d+)\s*$/;
+            let count = 0;
+            let expectedTotal = 0;
+            let foundProblematicLine = false;
+
+            lines.forEach(line => {
+                const match = line.trim().match(regex);
+                if (match && match[3] && match[4]) expectedTotal++;
+                if (line.includes('مِن سُلَيْمَانَ')) expectedTotal++; // Broader check for problematic line
+            });
+            showLoader('loader_populating', { count: 0, total: expectedTotal });
+
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            let errorsEncountered = 0;
+
+            transaction.oncomplete = () => {
+                console.log(`DB population completed. Added: ${count}, Errors: ${errorsEncountered}`);
+                if (!foundProblematicLine) {
+                    console.warn('Problematic line not found, inserting fallback ayah S27 A30');
+                    const fallbackTransaction = db.transaction(STORE_NAME, 'readwrite');
+                    const fallbackStore = fallbackTransaction.objectStore(STORE_NAME);
+                    const ayahData = {
+                        surah: 27,
+                        ayah: 30,
+                        arabic: 'إِنَّهُ مِن سُلَيْمَانَ وَإِنَّهُ بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                        urdu: 'وہ سلیمانؑ کی جانب سے ہے اور یہ اللہ کے نام سے شروع کیا گیا ہے جو بے حد مہربان نہایت رحم کرنے والا ہے',
+                        bookmarked: 0,
+                        read: 0
+                    };
+                    // Try put (update or insert) to handle existing records
+                    const request = fallbackStore.put(ayahData);
+                    request.onsuccess = () => {
+                        console.log('Fallback ayah S27 A30 added');
+                        count++;
+                        actualTotalAyahs = count;
+                        updateProgress();
+                        resolve();
+                    };
+                    request.onerror = (event) => {
+                        console.error('Error adding fallback ayah S27 A30:', event.target.error.message);
+                        actualTotalAyahs = count;
+                        resolve();
+                    };
+                } else {
+                    actualTotalAyahs = count;
+                    updateProgress();
+                    resolve();
+                }
+            };
+            transaction.onerror = (event) => {
+                console.error('Transaction error during population:', event.target.error);
+                hideLoader();
+                reject(`Transaction error: ${event.target.error.message || event.target.error}`);
+            };
+            transaction.onabort = (event) => {
+                console.error('Transaction aborted:', event.target.error);
+                hideLoader();
+                reject(`Transaction aborted: ${event.target.error ? event.target.error.name + ' - ' + event.target.error.message : 'Unknown reason'}`);
+            };
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const match = line.match(regex);
+                if (match && match[3] && match[4]) {
+                    const [, arabic, urdu = '', surah, ayah] = match;
+                    const ayahData = {
+                        surah: parseInt(surah),
+                        ayah: parseInt(ayah),
+                        arabic: arabic.trim(),
+                        urdu: urdu.trim(),
+                        bookmarked: 0,
+                        read: 0
+                    };
+                    const request = store.put(ayahData); // Use put to avoid ConstraintError
+                    request.onsuccess = () => {
+                        count++;
+                        if (count % 100 === 0 || count === expectedTotal) {
+                            setTimeout(() => showLoader('loader_populating', { count: count, total: expectedTotal }), 0);
+                        }
+                    };
+                    request.onerror = (event) => {
+                        errorsEncountered++;
+                        if (event.target.error.name !== 'ConstraintError') {
+                            console.error('Error adding ayah:', event.target.error.message, `Data: S${surah} A${ayah}`);
+                        }
+                        event.preventDefault();
+                    };
+                } else if (line.includes('مِن سُلَيْمَانَ')) {
+                    console.log(`Found problematic line: ${line}`);
+                    foundProblematicLine = true;
+                    const ayahData = {
+                        surah: 27,
+                        ayah: 30,
+                        arabic: 'إِنَّهُ مِن سُلَيْمَانَ وَإِنَّهُ بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                        urdu: 'وہ سلیمانؑ کی جانب سے ہے اور یہ اللہ کے نام سے شروع کیا گیا ہے جو بے حد مہربان نہایت رحم کرنے والا ہے',
+                        bookmarked: 0,
+                        read: 0
+                    };
+                    const request = store.put(ayahData); // Use put to avoid ConstraintError
+                    request.onsuccess = () => {
+                        console.log('Problematic ayah S27 A30 added');
+                        count++;
+                        if (count % 100 === 0 || count === expectedTotal) {
+                            setTimeout(() => showLoader('loader_populating', { count: count, total: expectedTotal }), 0);
+                        }
+                    };
+                    request.onerror = (event) => {
+                        errorsEncountered++;
+                        if (event.target.error.name !== 'ConstraintError') {
+                            console.error('Error adding problematic ayah S27 A30:', event.target.error.message);
+                        }
+                        event.preventDefault();
+                    };
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch or parse data:', error);
+            hideLoader();
+            alert(t('data_fetch_error') + ` (${error.message})`);
+            reject(error);
+        }
+    });
+}
+
+    function updateHeaderTitle() {
+         const activePage = document.querySelector('.page.active');
+         let titleKey = 'app_title'; // Default
+         if (activePage) {
+            const pageId = activePage.id.replace('page-', '');
+            switch (pageId) {
+                case 'home': titleKey = 'app_title'; break;
+                case 'surahs': titleKey = 'surah_page_title'; break;
+                case 'search': titleKey = 'search_title'; break;
+                case 'bookmarks': titleKey = 'bookmarks_title'; break;
+                case 'settings': titleKey = 'settings_title'; break;
+                case 'ayahs':
+                     if (currentSurah !== null) {
+                         headerTitle.textContent = `Surah ${surahNames[currentSurah - 1] || currentSurah} (${currentSurah})`; // Keep dynamic title for Ayah view
+                         return; // Don't use translation key here
+                     }
+                     break;
+            }
+         }
+         headerTitle.textContent = t(titleKey);
+     }
+
+
+    function navigateToPage(pageId) {
+        pages.forEach(page => page.classList.remove('active'));
+        const targetPage = document.getElementById(`page-${pageId}`);
+         if(targetPage) targetPage.classList.add('active');
+
+        navItems.forEach(item => item.classList.remove('active'));
+        const activeNavItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+        if(activeNavItem) activeNavItem.classList.add('active');
+
+        updateHeaderTitle(); // Update header based on the new page context and language
+
+        // Special actions for certain pages
+        if (pageId === 'surahs') loadSurahList();
+        if (pageId === 'bookmarks') loadBookmarks();
+        if (pageId === 'home') { updateProgress(); loadLastReadInfo();}
+        if (pageId === 'search') {
+             searchInput.value = '';
+             searchResultsEl.innerHTML = '';
+             searchSuggestionsEl.innerHTML = '';
+             searchSuggestionsEl.style.display = 'none';
+             searchNoResults.style.display = 'none';
+             searchError.style.display = 'none';
+             searchInit.style.display = 'block';
+        }
+
+        // Ensure main content scrolls to top when switching pages (except when going to Ayah view?)
+        if (pageId !== 'ayahs') {
+             const mainContent = document.querySelector('.main-content');
+             if (mainContent) mainContent.scrollTop = 0;
+         }
+    }
+
+    function loadSurahList() {
+        surahListEl.innerHTML = ''; // Clear previous list
+        const fragment = document.createDocumentFragment();
+        for (let i = 1; i <= SURAHS_COUNT; i++) {
+            const li = document.createElement('li');
+            li.className = 'list-item surah-item';
+            li.dataset.surah = i;
+            li.innerHTML = `
+                <div class="surah-info">
+                    <span class="surah-number">${i}</span>
+                    <span class="surah-name">${surahNames[i - 1] || `Surah ${i}`}</span>
+                </div>
+                <span class="surah-details">➔</span>
+            `;
+            // Add Ayah count when data is available? Requires another query or storing counts.
+            // Example: <span class="surah-details" data-surah-ayah-count="${i}">➔</span>
+            li.addEventListener('click', () => {
+                loadAyahView(i);
+            });
+            fragment.appendChild(li);
+        }
+        surahListEl.appendChild(fragment);
+    }
+
+    function loadAyahView(surahNumber) {
+        currentSurah = surahNumber;
+         // Update header directly since it's dynamic
+         headerTitle.textContent = `Surah ${surahNames[surahNumber - 1] || surahNumber} (${surahNumber})`;
+        ayahViewSurahTitle.textContent = `Surah ${surahNames[surahNumber - 1] || surahNumber} (${surahNumber})`;
+        navigateToPage('ayahs'); // Navigate *after* setting title context
+        showLoader('loader_loading');
+        ayahListEl.innerHTML = ''; // Clear previous ayahs
+
+        if (!db) { hideLoader(); ayahListEl.innerHTML = '<p>Database not available.</p>'; return; }
+
+        try {
+             const transaction = db.transaction(STORE_NAME, 'readonly');
+             const store = transaction.objectStore(STORE_NAME);
+             const index = store.index('surah');
+             const request = index.getAll(surahNumber);
+
+             request.onsuccess = () => {
+                 const ayahs = request.result.sort((a, b) => a.ayah - b.ayah);
+                 renderAyahs(ayahs, ayahListEl);
+                 hideLoader();
+
+                 const mainContent = document.querySelector('.main-content');
+                 const scrollPos = sessionStorage.getItem(`scroll_surah_${surahNumber}`);
+                 if (scrollPos && !lastRead.id) { // Only restore scroll if not auto-scrolling to last read
+                      mainContent.scrollTop = parseInt(scrollPos, 10);
+                 } else {
+                      mainContent.scrollTop = 0;
+                 }
+
+                if (lastRead.surah === surahNumber && lastRead.ayah !== null && lastRead.id !== null) {
+                     const lastReadEl = ayahListEl.querySelector(`[data-id="${lastRead.id}"]`);
+                     if (lastReadEl) {
+                         setTimeout(() => {
+                             lastReadEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         }, 150);
+                     }
+                 }
+             };
+             request.onerror = (event) => {
+                 console.error('Error fetching ayahs:', event.target.error);
+                 hideLoader();
+                 ayahListEl.innerHTML = '<p>Error loading Ayahs.</p>';
+             };
+         } catch (e) {
+             console.error("Error creating transaction for loading ayahs:", e);
+             hideLoader();
+             ayahListEl.innerHTML = '<p>Error accessing database.</p>';
+         }
+    }
+
+    function renderAyahs(ayahs, container, searchTerm = null) {
+         container.innerHTML = ''; // Clear previous content
+         const fragment = document.createDocumentFragment();
+         ayahs.forEach(ayah => {
+            const li = document.createElement('li');
+            li.className = 'ayah-item';
+            li.dataset.id = ayah.id;
+            li.dataset.surah = ayah.surah;
+            li.dataset.ayah = ayah.ayah;
+            if (ayah.read) li.classList.add('read');
+
+             let arabicText = ayah.arabic || '';
+             let urduText = ayah.urdu || '';
+
+             if (searchTerm) {
+                try {
+                     const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                     const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+                     arabicText = arabicText.replace(regex, '<mark>$1</mark>');
+                     urduText = urduText.replace(regex, '<mark>$1</mark>');
+                 } catch (e) { console.warn("Regex error during highlighting:", e); }
+             }
+
+            li.innerHTML = `
+                <div class="ayah-header">
+                    <span>${ayah.surah}:${ayah.ayah}</span>
+                    <div class="ayah-controls">
+                        <button class="bookmark-btn ${ayah.bookmarked ? 'active' : ''}" title="${t('bookmark_toggle_title')}">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/></svg>
+                         </button>
+                        <button class="read-toggle-btn ${ayah.read ? 'active' : ''}" title="${ayah.read ? t('read_toggle_unread_title') : t('read_toggle_read_title')}">
+                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                         </button>
+                         <button class="read-mode-btn" title="${t('reading_mode_enter_title')}">
+                              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                          </button>
+                    </div>
+                </div>
+                <p class="ayah-text-arabic" dir="rtl">${arabicText}</p>
+                <p class="ayah-text-urdu" dir="rtl">${urduText}</p>
+            `;
+            // Add titles dynamically based on language
+            li.querySelector('.bookmark-btn').title = t(ayah.bookmarked ? 'bookmark_remove_title' : 'bookmark_add_title');
+            li.querySelector('.read-toggle-btn').title = t(ayah.read ? 'read_toggle_unread_title' : 'read_toggle_read_title');
+            li.querySelector('.read-mode-btn').title = t('reading_mode_enter_title');
+
+
+            const bookmarkBtn = li.querySelector('.bookmark-btn');
+            const readToggleBtn = li.querySelector('.read-toggle-btn');
+            const readModeBtn = li.querySelector('.read-mode-btn');
+
+            if (bookmarkBtn) bookmarkBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleBookmark(ayah.id, bookmarkBtn); });
+            if (readToggleBtn) readToggleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleReadStatus(ayah.id, li); saveLastReadPosition(ayah.surah, ayah.ayah, ayah.id); });
+            if (readModeBtn) readModeBtn.addEventListener('click', (e) => { e.stopPropagation(); enterReadingMode(ayah.id); });
+            li.addEventListener('click', () => { saveLastReadPosition(ayah.surah, ayah.ayah, ayah.id); });
+
+            fragment.appendChild(li);
+        });
+        container.appendChild(fragment);
+    }
+
+    function updateAyahUI(id, updates) {
+        const elements = document.querySelectorAll(`.ayah-item[data-id="${id}"]`);
+        elements.forEach(itemElement => {
+             updateSingleAyahItemUI(itemElement, updates);
+             if (updates.hasOwnProperty('bookmarked') && !updates.bookmarked && itemElement.closest('#bookmark-list')) {
+                 itemElement.remove();
+                 if (bookmarkListEl.children.length === 0) {
+                    noBookmarksMsg.style.display = 'block';
+                 }
+             }
+         });
+     }
+
+     function updateSingleAyahItemUI(itemElement, updates) {
+         if (updates.hasOwnProperty('bookmarked')) {
+             const btn = itemElement.querySelector('.bookmark-btn');
+             if (btn) {
+                 const isBookmarked = !!updates.bookmarked;
+                 btn.classList.toggle('active', isBookmarked);
+                 btn.title = t(isBookmarked ? 'bookmark_remove_title' : 'bookmark_add_title');
+             }
+         }
+         if (updates.hasOwnProperty('read')) {
+             const btn = itemElement.querySelector('.read-toggle-btn');
+             const isRead = !!updates.read;
+             itemElement.classList.toggle('read', isRead);
+             if (btn) {
+                 btn.classList.toggle('active', isRead);
+                 btn.title = t(isRead ? 'read_toggle_unread_title' : 'read_toggle_read_title');
+             }
+         }
+     }
+
+
+     function updateAyahData(id, updates) {
+        return new Promise((resolve, reject) => {
+             if (!db) return reject("DB not initialized");
+             try {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(id);
+                request.onsuccess = () => {
+                    const data = request.result;
+                    if (!data) return reject("Ayah not found");
+                    Object.assign(data, updates);
+                    const updateRequest = store.put(data);
+                    updateRequest.onsuccess = () => { updateAyahUI(id, updates); resolve(); };
+                    updateRequest.onerror = (event) => reject(event.target.error);
+                };
+                request.onerror = (event) => reject(event.target.error);
+                transaction.onerror = (event) => { console.error("Tx error updateAyahData:", event.target.error); reject(event.target.error); };
+            } catch (e) { reject(`Error creating tx for update: ${e}`); }
+        });
+    }
+
+    async function toggleBookmark(id, button) {
+        const isActive = button.classList.contains('active');
+        try {
+             await updateAyahData(id, { bookmarked: isActive ? 0 : 1 });
+        } catch (error) { console.error('Failed to toggle bookmark:', error); }
+     }
+
+    async function toggleReadStatus(id, listItem) {
+         const isRead = listItem.classList.contains('read');
+         try {
+             await updateAyahData(id, { read: isRead ? 0 : 1 });
+             updateProgress();
+         } catch (error) { console.error('Failed to toggle read status:', error); }
+     }
+
+     function updateProgressText() {
+          const readCount = parseInt(progressBarInner.dataset.readCount || '0');
+          const total = actualTotalAyahs || 0;
+          const percentage = total > 0 ? Math.round((readCount / total) * 100) : 0;
+          progressText.textContent = `${percentage}% (${t('read_count', { count: readCount, total: total })})`;
+      }
+
+     function updateProgress() {
+         if (!db || !db.objectStoreNames.contains(STORE_NAME)) {
+              progressBarInner.style.width = `0%`;
+              progressBarInner.dataset.readCount = 0;
+              updateProgressText();
+              return;
+          }
+         try {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const readIndex = store.index('read');
+            const readCountRequest = readIndex.count(1);
+
+            readCountRequest.onsuccess = () => {
+                const readCount = readCountRequest.result;
+                 progressBarInner.dataset.readCount = readCount; // Store count for text update
+                 const totalCountRequest = store.count(); // Get total again to be sure
+                 totalCountRequest.onsuccess = () => {
+                     actualTotalAyahs = totalCountRequest.result; // Update global total
+                     const percentage = actualTotalAyahs > 0 ? Math.round((readCount / actualTotalAyahs) * 100) : 0;
+                     progressBarInner.style.width = `${percentage}%`;
+                     updateProgressText(); // Update text using translation
+                     console.log(`Progress updated: ${percentage}%`);
+                 };
+                 totalCountRequest.onerror = (event) => {
+                     console.error('Error getting total count for progress:', event.target.error);
+                     updateProgressText(); // Update text even if total count failed
+                 };
+             };
+            readCountRequest.onerror = (event) => { console.error('Error counting read ayahs:', event.target.error); };
+         } catch(e) { console.error("Error creating tx for progress:", e); }
+     }
+
+     function performSearch(query) {
+        searchResultsEl.innerHTML = ''; // Clear previous results
+         searchInit.style.display = 'none';
+         searchNoResults.style.display = 'none';
+         searchError.style.display = 'none';
+        searchSuggestionsEl.style.display = 'none';
+        searchSuggestionsEl.innerHTML = '';
+
+        if (!query || query.length < 2) {
+             searchInit.style.display = 'block';
+             return;
+         }
+         searchResultsEl.innerHTML = `<p>${t('loader_loading')}</p>`; // Show loading state
+
+         if (!db || !db.objectStoreNames.contains(STORE_NAME)) {
+             searchResultsEl.innerHTML = '';
+             searchError.textContent = t('db_not_available');
+             searchError.style.display = 'block';
+             return;
+         }
+
+         try {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const results = [];
+            const lowerQuery = query.toLowerCase();
+            let cursorRequest = store.openCursor();
+            const MAX_RESULTS = 100;
+
+            cursorRequest.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor && results.length < MAX_RESULTS) {
+                    const ayah = cursor.value;
+                    let match = false;
+                    if (ayah.arabic && ayah.arabic.includes(query)) match = true;
+                    else if (ayah.urdu && ayah.urdu.toLowerCase().includes(lowerQuery)) match = true;
+                    if (match) results.push(ayah);
+                    cursor.continue();
+                } else {
+                    renderSearchResults(results, query);
+                }
+            };
+            cursorRequest.onerror = (event) => {
+                console.error('Search error:', event.target.error);
+                 searchResultsEl.innerHTML = '';
+                 searchError.textContent = t('search_error');
+                 searchError.style.display = 'block';
+            };
+         } catch(e) {
+              console.error("Error creating tx for search:", e);
+              searchResultsEl.innerHTML = '';
+              searchError.textContent = t('db_access_error');
+              searchError.style.display = 'block';
+          }
+     }
+
+     function performSuggestionSearch(query) {
+         searchSuggestionsEl.innerHTML = '';
+         searchSuggestionsEl.style.display = 'none';
+         if (!query || query.length < 2 || !db || !db.objectStoreNames.contains(STORE_NAME)) return;
+
+        try {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const suggestions = [];
+            const addedAyahIds = new Set();
+            const lowerQuery = query.toLowerCase();
+            const MAX_SUGGESTIONS = 10;
+             let arabicIndex = store.index('arabic');
+             let urduIndex = store.index('urdu');
+             let arabicCursorReq = arabicIndex.openCursor();
+             let urduCursorReq = urduIndex.openCursor();
+
+            const processCursor = (cursor, fieldName) => {
+                if (cursor && suggestions.length < MAX_SUGGESTIONS) {
+                     const ayah = cursor.value;
+                     const text = ayah[fieldName];
+                     if (!text) return; // Skip if field is empty
+                     const matchIndex = fieldName === 'urdu' ? text.toLowerCase().indexOf(lowerQuery) : text.indexOf(query);
+
+                     if (matchIndex > -1 && !addedAyahIds.has(ayah.id)) {
+                         const snippetLength = 50;
+                         let start = Math.max(0, matchIndex - Math.floor(snippetLength/3));
+                         let end = Math.min(text.length, matchIndex + query.length + Math.ceil(snippetLength*2/3));
+                         let snippet = (start > 0 ? '...' : '') + text.substring(start, end) + (end < text.length ? '...' : '');
+                         try {
+                             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                             snippet = snippet.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>');
+                         } catch (e) { /* ignore */ }
+                         suggestions.push({ text: snippet, ayah: ayah });
+                         addedAyahIds.add(ayah.id);
+                     }
+                     cursor.continue();
+                 }
+             };
+
+            let arabicDone = false, urduDone = false;
+            const checkCompletion = () => { if (arabicDone && urduDone) renderSuggestions(suggestions, query); };
+
+             arabicCursorReq.onsuccess = (event) => { processCursor(event.target.result, 'arabic'); if (!event.target.result) { arabicDone = true; checkCompletion(); } };
+             urduCursorReq.onsuccess = (event) => { processCursor(event.target.result, 'urdu'); if (!event.target.result) { urduDone = true; checkCompletion(); } };
+             arabicCursorReq.onerror = urduCursorReq.onerror = (event) => {
+                  console.error('Suggestion cursor error:', event.target.error);
+                  if (event.target === arabicCursorReq) arabicDone = true; else urduDone = true;
+                  checkCompletion(); // Attempt to render even if one cursor failed
+              };
+         } catch(e) { console.error("Error creating tx for suggestions:", e); }
+     }
+
+     function renderSuggestions(suggestions, query) {
+         searchSuggestionsEl.innerHTML = '';
+         const uniqueSuggestions = Array.from(new Map(suggestions.map(s => [s.ayah.id, s])).values());
+         if (uniqueSuggestions.length > 0) {
+             uniqueSuggestions.slice(0, 10).forEach(suggestion => {
+                 const li = document.createElement('li');
+                 li.innerHTML = `(${suggestion.ayah.surah}:${suggestion.ayah.ayah}) ${suggestion.text}`;
+                 li.addEventListener('click', () => {
+                      searchInput.value = query;
+                      performSearch(query);
+                 });
+                 searchSuggestionsEl.appendChild(li);
+             });
+             searchSuggestionsEl.style.display = 'block';
+         } else {
+             searchSuggestionsEl.style.display = 'none';
+         }
+     }
+
+     function renderSearchResults(results, query) {
+        searchResultsEl.innerHTML = ''; // Clear loading message
+        if (results.length > 0) {
+             searchInit.style.display = 'none';
+             searchNoResults.style.display = 'none';
+             searchError.style.display = 'none';
+             renderAyahs(results, searchResultsEl, query);
+         } else {
+             searchInit.style.display = 'none';
+             searchError.style.display = 'none';
+             searchNoResults.textContent = t('search_no_results'); // Use translation
+             searchNoResults.style.display = 'block';
+         }
+     }
+
+
+     function loadBookmarks() {
+         showLoader('loader_loading');
+         bookmarkListEl.innerHTML = '';
+         noBookmarksMsg.style.display = 'none';
+
+         if (!db || !db.objectStoreNames.contains(STORE_NAME)) {
+             hideLoader();
+             noBookmarksMsg.textContent = t('db_not_available');
+             noBookmarksMsg.style.display = 'block';
+             return;
+         }
+         try {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const index = store.index('bookmarked');
+            const request = index.getAll(1);
+            request.onsuccess = () => {
+                const bookmarks = request.result.sort((a, b) => a.surah === b.surah ? a.ayah - b.ayah : a.surah - b.surah);
+                if (bookmarks.length > 0) {
+                   renderAyahs(bookmarks, bookmarkListEl);
+                   noBookmarksMsg.style.display = 'none';
+                } else {
+                   noBookmarksMsg.textContent = t('bookmarks_empty'); // Use translation
+                   noBookmarksMsg.style.display = 'block';
+                }
+                hideLoader();
+            };
+            request.onerror = (event) => {
+                console.error('Error fetching bookmarks:', event.target.error);
+                 bookmarkListEl.innerHTML = `<p>${t('error_generic')}</p>`;
+                 noBookmarksMsg.style.display = 'none';
+                hideLoader();
+            };
+         } catch(e) {
+             console.error("Error creating tx for bookmarks:", e);
+             hideLoader();
+             bookmarkListEl.innerHTML = `<p>${t('db_access_error')}</p>`;
+             noBookmarksMsg.style.display = 'none';
+         }
+     }
+
+     function updateLastReadText() {
+         if (lastRead.surah && lastRead.ayah && lastRead.id !== null) {
+             lastReadInfo.textContent = `Surah ${surahNames[lastRead.surah - 1] || lastRead.surah} (${lastRead.surah}), ${t('ayah')} ${lastRead.ayah}`;
+             resumeReadingBtn.style.display = 'inline-block';
+         } else {
+             lastReadInfo.textContent = t('last_read_empty');
+             resumeReadingBtn.style.display = 'none';
+         }
+     }
+
+
+    function applySettings(settings, updateText = true) {
+         // Theme
+         body.dataset.theme = settings.theme;
+         darkModeToggle.checked = settings.theme === 'dark';
+
+         // Font Size
+         body.dataset.fontSize = settings.fontSize;
+         let fontSizeVal = '16px', arabicMultiplier = 1.8, urduMultiplier = 1.2;
+         if (settings.fontSize === 'small') { fontSizeVal = '14px'; arabicMultiplier = 1.6; urduMultiplier = 1.1; }
+         else if (settings.fontSize === 'large') { fontSizeVal = '18px'; arabicMultiplier = 2.0; urduMultiplier = 1.3; }
+         document.documentElement.style.setProperty('--font-size-base', fontSizeVal);
+         document.documentElement.style.setProperty('--font-size-arabic', `${arabicMultiplier}rem`);
+         document.documentElement.style.setProperty('--font-size-urdu', `${urduMultiplier}rem`);
+         fontSizeControls.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.size === settings.fontSize));
+
+        // Content Display
+         body.dataset.display = settings.display;
+         languageToggleControls.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.display === settings.display));
+
+        // UI Language
+         body.lang = settings.language;
+         uiLanguageToggle.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === settings.language));
+
+         if (readingModeActive) { // Update reading mode if active
+             readingArabicEl.style.display = (settings.display === 'arabic' || settings.display === 'both') ? 'block' : 'none';
+             readingUrduEl.style.display = (settings.display === 'urdu' || settings.display === 'both') ? 'block' : 'none';
+         }
+         // Update UI Text (conditionally to avoid loops)
+         if (updateText) updateUIText();
+     }
+
+     async function loadAndApplySettings() {
+         try {
+            const [theme, fontSize, display, language] = await Promise.all([
+                 getSetting('theme'), getSetting('fontSize'),
+                 getSetting('display'), getSetting('language')
+             ]);
+            currentSettings.theme = theme || 'light';
+            currentSettings.fontSize = fontSize || 'medium';
+            currentSettings.display = display || 'both';
+            currentSettings.language = language || 'en'; // Default to English
+
+            applySettings(currentSettings, true); // Apply and update text
+            console.log("Settings loaded:", currentSettings);
+         } catch (error) {
+             console.error("Failed to load settings:", error);
+             applySettings(currentSettings, true); // Apply defaults and update text
+         }
+     }
+
+    async function saveSettings() {
+         try {
+             await Promise.all([
+                setSetting('theme', currentSettings.theme),
+                setSetting('fontSize', currentSettings.fontSize),
+                setSetting('display', currentSettings.display),
+                setSetting('language', currentSettings.language)
+             ]);
+             console.log("Settings saved:", currentSettings);
+         } catch (error) { console.error("Failed to save settings:", error); }
+     }
+
+     function saveLastReadPosition(surah, ayah, id) {
+        if (id === null || id === undefined) return;
+        lastRead = { surah, ayah, id };
+        setSetting('lastRead', lastRead)
+            .then(() => { console.log(`Last read saved: S${surah}, A${ayah}, ID ${id}`); updateLastReadText(); })
+             .catch(err => console.error('Failed to save last read:', err));
+     }
+
+    async function loadLastReadInfo() {
+         try {
+             const savedLastRead = await getSetting('lastRead');
+             if (savedLastRead && savedLastRead.surah && savedLastRead.ayah && savedLastRead.id !== undefined && savedLastRead.id !== null) {
+                 lastRead = savedLastRead;
+             } else {
+                 lastRead = { surah: null, ayah: null, id: null };
+             }
+             updateLastReadText(); // Update UI based on loaded/reset data
+         } catch (error) {
+             console.error('Failed to load last read:', error);
+             lastRead = { surah: null, ayah: null, id: null }; // Reset on error
+             updateLastReadText(); // Update UI to show default
+         }
+     }
+
+    function getAyahById(id) {
+         return new Promise((resolve, reject) => {
+             if (!db) return reject("DB not initialized");
+             if (id === null || id === undefined) return reject("Invalid ID");
+            try {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const st = tx.objectStore(STORE_NAME);
+                const req = st.get(id);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = (event) => reject(event.target.error);
+            } catch (e) { reject(`Error creating tx: ${e}`); }
+         });
+     }
+
+     function getAdjacentAyahId(currentId, direction) {
+         return new Promise(async (resolve, reject) => {
+             if (!db || currentId === null || currentId === undefined) return reject("DB invalid or missing ID");
+             try {
+                 const currentAyahData = await getAyahById(currentId);
+                 if (!currentAyahData) return reject("Current Ayah data not found: " + currentId);
+                 const tx = db.transaction(STORE_NAME, 'readonly');
+                 const st = tx.objectStore(STORE_NAME);
+                 const idx = st.index('surah_ayah');
+                 let range, cursorDir;
+                 if (direction === 'next') { range = IDBKeyRange.lowerBound([currentAyahData.surah, currentAyahData.ayah], true); cursorDir = 'next'; }
+                 else { range = IDBKeyRange.upperBound([currentAyahData.surah, currentAyahData.ayah], true); cursorDir = 'prev'; }
+                 const req = idx.openCursor(range, cursorDir);
+                 let found = false;
+                 req.onsuccess = (event) => {
+                     const cursor = event.target.result;
+                     if (cursor) {
+                          if (cursor.value.id === currentId) { cursor.continue(); return; }
+                          resolve(cursor.value.id); found = true;
+                      } else if (!found) { resolve(null); } // End/Beginning reached
+                  };
+                 req.onerror = (event) => reject(event.target.error);
+             } catch (error) { reject(`Error in getAdjacent: ${error}`); }
+         });
+     }
+
+    async function enterReadingMode(ayahId) {
+         if (ayahId === null || ayahId === undefined) return;
+         try {
+             const ayah = await getAyahById(ayahId);
+             if (!ayah) { console.error("Ayah data not found:", ayahId); return; }
+             readingModeCurrentId = ayah.id;
+             readingArabicEl.textContent = ayah.arabic || '';
+             readingUrduEl.textContent = ayah.urdu || '';
+             readingArabicEl.style.display = (currentSettings.display === 'arabic' || currentSettings.display === 'both') ? 'block' : 'none';
+             readingUrduEl.style.display = (currentSettings.display === 'urdu' || currentSettings.display === 'both') ? 'block' : 'none';
+             readingModeEl.style.display = 'flex';
+             readingModeActive = true;
+             document.body.style.overflow = 'hidden';
+             if (!ayah.read) { await updateAyahData(ayah.id, { read: 1 }); updateProgress(); }
+             saveLastReadPosition(ayah.surah, ayah.ayah, ayah.id);
+         } catch (error) { console.error("Error entering reading mode:", error); }
+     }
+
+     function exitReadingMode() {
+         readingModeEl.style.display = 'none';
+         readingModeActive = false;
+         readingModeCurrentId = null;
+         document.body.style.overflow = '';
+         if (lastRead.id !== null) { updateAyahUI(lastRead.id, { read: 1 }); } // Ensure UI reflects read status
+      }
+
+    async function navigateReadingMode(direction) {
+         if (!readingModeCurrentId) return;
+         showLoader("loader_loading");
+         try {
+             const adjacentId = await getAdjacentAyahId(readingModeCurrentId, direction);
+             if (adjacentId !== null) await enterReadingMode(adjacentId);
+             else console.log(`Reached ${direction} end.`);
+         } catch (error) { console.error(`Error navigating ${direction}:`, error); }
+         finally { hideLoader(); }
+     }
+
+    function handleTouchStart(event) { if (!readingModeActive) return; touchStartX = event.changedTouches[0].screenX; }
+    function handleTouchEnd(event) {
+         if (!readingModeActive || touchStartX === 0) return;
+         touchEndX = event.changedTouches[0].screenX;
+         handleSwipeGesture();
+         touchStartX = touchEndX = 0;
+     }
+    function handleSwipeGesture() {
+         const threshold = 50; const deltaX = touchEndX - touchStartX;
+         if (deltaX < -threshold) navigateReadingMode('next');
+         else if (deltaX > threshold) navigateReadingMode('prev');
+     }
+
+    // --- Event Listeners ---
+    document.addEventListener('DOMContentLoaded', async () => {
+         showLoader('loader_init');
+         try {
+             await initDB();
+             await loadAndApplySettings(); // Load settings (applies language/theme)
+
+             const isPopulated = await checkDBPopulated(); // Checks flag and counts
+
+             if (!isPopulated) {
+                  try {
+                     await fetchAndPopulateDB(); // Fetches, parses, stores, sets flag, updates progress
+                  } catch (populationError) {
+                       console.error("Critical population error:", populationError);
+                       showLoader('loader_error'); // Show error in loader
+                       return; // Stop
+                   }
+             } else {
+                 console.log("Database already populated.");
+                 updateProgress(); // Update progress if already populated
+                 await loadLastReadInfo(); // Load last read info
+             }
+
+             navigateToPage('home'); // Start at home
+             hideLoader();
+
+             // Scroll listener
+              const mainContent = document.querySelector('.main-content');
+              if (mainContent) {
+                 mainContent.addEventListener('scroll', (e) => {
+                     if (currentSurah !== null && document.getElementById('page-ayahs').classList.contains('active')) {
+                          sessionStorage.setItem(`scroll_surah_${currentSurah}`, e.target.scrollTop);
+                      }
+                  }, { passive: true });
+             }
+         } catch (error) {
+             console.error('Initialization failed:', error);
+             showLoader('loader_error');
+         }
+    });
+
+    navItems.forEach(item => { item.addEventListener('click', () => navigateToPage(item.dataset.page)); });
+    darkModeToggle.addEventListener('change', () => { currentSettings.theme = darkModeToggle.checked ? 'dark' : 'light'; applySettings(currentSettings, false); saveSettings(); });
+    fontSizeControls.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && e.target.dataset.size) { currentSettings.fontSize = e.target.dataset.size; applySettings(currentSettings, false); saveSettings(); } });
+    languageToggleControls.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && e.target.dataset.display) { currentSettings.display = e.target.dataset.display; applySettings(currentSettings, false); saveSettings(); } });
+    uiLanguageToggle.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && e.target.dataset.lang) { currentSettings.language = e.target.dataset.lang; applySettings(currentSettings, true); saveSettings(); } }); // Update text on language change
+
+    searchInput.addEventListener('input', () => {
+         clearTimeout(searchDebounceTimer);
+         const query = searchInput.value.trim();
+         searchResultsEl.innerHTML = '';
+         searchInit.style.display = query.length < 2 ? 'block' : 'none';
+         searchNoResults.style.display = 'none';
+         searchError.style.display = 'none';
+         searchDebounceTimer = setTimeout(() => performSuggestionSearch(query), 350);
+     });
+     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(searchDebounceTimer); performSearch(searchInput.value.trim()); } });
+     searchInput.addEventListener('blur', () => { setTimeout(() => { if (!searchSuggestionsEl.contains(document.activeElement)) { searchSuggestionsEl.style.display = 'none'; } }, 200); });
+     searchSuggestionsEl.addEventListener('mousedown', (e) => { e.preventDefault(); }); // Prevent blur hide
+
+    readingModeCloseBtn.addEventListener('click', exitReadingMode);
+    readingNavPrev.addEventListener('click', () => navigateReadingMode('prev'));
+    readingNavNext.addEventListener('click', () => navigateReadingMode('next'));
+    readingModeEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+    readingModeEl.addEventListener('touchend', handleTouchEnd, false);
+
+     resumeReadingBtn.addEventListener('click', () => { if (lastRead.id !== null) enterReadingMode(lastRead.id); else if (lastRead.surah) loadAyahView(lastRead.surah); });
+     clearDataBtn.addEventListener('click', async () => {
+         if (confirm(t('confirm_clear_data'))) {
+             try {
+                showLoader('loader_clearing');
+                if (db) { db.close(); db = null; }
+                 const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+                 deleteRequest.onsuccess = () => { console.log('DB deleted'); sessionStorage.clear(); localStorage.clear(); alert(t('alert_clear_success')); window.location.reload(); };
+                 deleteRequest.onerror = (event) => { console.error('Error deleting DB:', event.target.error); alert(t('alert_clear_error')); hideLoader(); };
+                 deleteRequest.onblocked = () => { console.warn('DB delete blocked'); alert(t('alert_clear_blocked')); hideLoader(); };
+             } catch (error) { console.error('Error clearing data:', error); alert(t('error_generic')); hideLoader(); }
+         }
+     });
+
+    // Add missing translation keys (titles) to translations object
+    translations.en.bookmark_toggle_title = "Toggle Bookmark";
+    translations.en.bookmark_add_title = "Add Bookmark";
+    translations.en.bookmark_remove_title = "Remove Bookmark";
+    translations.en.read_toggle_read_title = "Mark as Read";
+    translations.en.read_toggle_unread_title = "Mark as Unread";
+    translations.en.reading_mode_enter_title = "Enter Reading Mode";
+    translations.en.db_not_available = "Database not available.";
+    translations.en.db_access_error = "Error accessing database.";
+    translations.en.read_count = "{count}/{total} Read";
+
+    translations.ur.bookmark_toggle_title = "بک مارک ٹوگل کریں";
+    translations.ur.bookmark_add_title = "بک مارک شامل کریں";
+    translations.ur.bookmark_remove_title = "بک مارک ہٹائیں";
+    translations.ur.read_toggle_read_title = "پڑھا ہوا نشان زد کریں";
+    translations.ur.read_toggle_unread_title = "ناخواندہ نشان زد کریں";
+    translations.ur.reading_mode_enter_title = "ریڈنگ موڈ میں داخل ہوں";
+    translations.ur.db_not_available = "ڈیٹا بیس دستیاب نہیں ہے۔";
+    translations.ur.db_access_error = "ڈیٹا بیس تک رسائی میں خرابی۔";
+    translations.ur.read_count = "{count}/{total} پڑھے ہوئے";
+
+
+</script>
+
+</body>
+</html>

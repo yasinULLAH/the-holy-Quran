@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Quran App</title>
+<style>
+:root {
+--bg-color-light: #ffffff; --text-color-light: #333333; --accent-color-light: #007bff; --border-color-light: #e0e0e0; --highlight-color-light: #fff3cd; --secondary-bg-light: #f8f9fa;
+--bg-color-dark: #1a1a1a; --text-color-dark: #e0e0e0; --accent-color-dark: #4da6ff; --border-color-dark: #444444; --highlight-color-dark: #5a4a20; --secondary-bg-dark: #2a2a2a;
+--bg-color-futuristic: #0d0d1a; --text-color-futuristic: #b0c4de; --accent-color-futuristic: #00e5ff; --border-color-futuristic: #33334d; --highlight-color-futuristic: #4d004d; --secondary-bg-futuristic: #1a1a33;
+--bg-color: var(--bg-color-light); --text-color: var(--text-color-light); --accent-color: var(--accent-color-light); --border-color: var(--border-color-light); --highlight-color: var(--highlight-color-light); --secondary-bg: var(--secondary-bg-light);
+--font-size-base: 16px; --font-size-arabic: 24px; --font-size-urdu: 16px;
+--ui-lang: 'en';
+}
+html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; background-color: var(--bg-color); color: var(--text-color); font-size: var(--font-size-base); line-height: 1.6; -webkit-tap-highlight-color: transparent; }
+body { display: flex; flex-direction: column; }
+button, input, select { font-family: inherit; font-size: inherit; padding: 8px 12px; margin: 5px; border-radius: 5px; border: 1px solid var(--border-color); background-color: var(--secondary-bg); color: var(--text-color); cursor: pointer; transition: background-color 0.2s ease; }
+button:hover, select:hover { background-color: var(--border-color); }
+button:active { transform: scale(0.98); }
+input[type="text"], input[type="search"], input[type="datetime-local"], select, textarea { width: calc(100% - 30px); background-color: var(--secondary-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px; border-radius: 5px; }
+input[type="range"] { width: calc(100% - 30px); cursor: pointer; }
+a { color: var(--accent-color); text-decoration: none; }
+h2, h3 { margin: 10px 0 5px 0; color: var(--accent-color); }
+#appLoader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-size: 1.2em; transition: opacity 0.5s ease; }
+#appLoader progress { width: 80%; max-width: 300px; margin-top: 15px; }
+#appContainer { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+header { background-color: var(--secondary-bg); padding: 5px 10px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 100; }
+#mainContent { flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0; position: relative; }
+#surahListView, #searchView, #bookmarksView, #notesView, #settingsView, #historyView, #statsView, #remindersView, #backupRestoreView { display: none; padding: 15px; height: calc(100% - 30px); overflow-y: auto; box-sizing: border-box; }
+#readerView { display: none; flex-direction: column; height: 100%; }
+#readerView.active, #surahListView.active, #searchView.active, #bookmarksView.active, #notesView.active, #settingsView.active, #historyView.active, #statsView.active, #remindersView.active, #backupRestoreView.active { display: block; }
+#readerView.active { display: flex; }
+#readerContent { flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px; direction: rtl; }
+#readerContent.paginated { overflow: hidden; display: flex; flex-direction: column; }
+#pageContainer { flex-grow: 1; overflow-y: auto; }
+.ayah { margin-bottom: 15px; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; background-color: var(--bg-color); transition: background-color 0.3s ease; position: relative; cursor: pointer; }
+.ayah.bookmarked { border-left: 5px solid var(--accent-color); }
+.ayah.current { background-color: var(--highlight-color); }
+.ayahArabic { font-size: var(--font-size-arabic); line-height: 1.8; margin-bottom: 8px; text-align: right; pointer-events: none; }
+.ayahTranslation { font-size: var(--font-size-urdu); line-height: 1.6; text-align: right; color: var(--text-color); opacity: 0.9; pointer-events: none;}
+.ayahMeta { font-size: 0.8em; color: #888; text-align: left; margin-top: 8px; direction: ltr; pointer-events: none;}
+.ayahActions { position: absolute; bottom: 5px; left: 5px; display: flex; gap: 5px; direction: ltr; opacity: 0; transition: opacity 0.2s ease; z-index: 10; }
+.ayah:hover .ayahActions { opacity: 1; }
+.ayahActionButton { background: none; border: none; padding: 3px; font-size: 0.9em; cursor: pointer; color: var(--accent-color); }
+.ayahNoteInput { width: calc(100% - 22px); margin-top: 5px; font-size: 0.9em; background-color: var(--secondary-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 5px; border-radius: 3px; display: none; pointer-events: none; box-sizing: border-box; }
+.ayah.has-note .ayahNoteInput { display: block; }
+.highlight { background-color: var(--highlight-color); font-weight: bold; }
+#paginationControls { display: none; justify-content: space-between; padding: 10px; border-top: 1px solid var(--border-color); background-color: var(--secondary-bg); flex-shrink: 0; }
+#paginationControls.visible { display: flex; }
+nav { background-color: var(--secondary-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 5px 0; flex-shrink: 0; z-index: 100; }
+nav button { background: none; border: none; color: var(--text-color); font-size: 0.8em; padding: 5px; flex-grow: 1; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+nav button.active { color: var(--accent-color); font-weight: bold; }
+nav button svg { width: 20px; height: 20px; fill: currentColor; margin-bottom: 3px; pointer-events: none;}
+nav button span { pointer-events: none;}
+.surah-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s ease; }
+.surah-list-item:hover { background-color: var(--secondary-bg); }
+.surah-list-item-name { font-weight: bold; direction: rtl; pointer-events: none; }
+.surah-list-item-number { font-size: 0.9em; color: #888; pointer-events: none; margin-right: 5px; }
+.surah-list-item > div { pointer-events: none; }
+.surah-list-item > span { pointer-events: none; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 5000; display: none; justify-content: center; align-items: center; padding: 15px; }
+.modal.active { display: flex; }
+.modal-content { background-color: var(--bg-color); padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80%; overflow-y: auto; position: relative; box-sizing: border-box; }
+.modal-close { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: var(--text-color); }
+#searchBox { display: flex; margin-bottom: 15px; }
+#searchInput { flex-grow: 1; margin-right: 5px; }
+#settingsView label, #remindersView label { display: block; margin-top: 10px; margin-bottom: 3px; font-weight: bold; }
+#fontSizeValue, #linesPerPageValue { margin-left: 10px; font-weight: normal; }
+.stats-section h3, .history-section h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; }
+.history-item { border-bottom: 1px dashed var(--border-color); padding: 8px 0; font-size: 0.9em; }
+.reminder-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; margin-bottom: 10px; }
+.reminder-item button { margin-left: 10px; }
+.fullscreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; z-index: 2000 !important; background-color: var(--bg-color) !important; overflow: auto !important; padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important;}
+.fullscreen #readerContent { flex-grow: 1 !important; height: auto !important; padding: 20px !important; }
+.fullscreen #paginationControls { flex-shrink: 0 !important; }
+.hidden { display: none !important; }
+[data-lang-key] { display: none; } /* Base state */
+body[data-ui-lang="en"] [data-lang-key="en"],
+body[data-ui-lang="ur"] [data-lang-key="ur"] { display: inline; } /* Show based on lang */
+
+body[data-theme="light"] { --bg-color: var(--bg-color-light); --text-color: var(--text-color-light); --accent-color: var(--accent-color-light); --border-color: var(--border-color-light); --highlight-color: var(--highlight-color-light); --secondary-bg: var(--secondary-bg-light); }
+body[data-theme="dark"] { --bg-color: var(--bg-color-dark); --text-color: var(--text-color-dark); --accent-color: var(--accent-color-dark); --border-color: var(--border-color-dark); --highlight-color: var(--highlight-color-dark); --secondary-bg: var(--secondary-bg-dark); }
+body[data-theme="futuristic"] { --bg-color: var(--bg-color-futuristic); --text-color: var(--text-color-futuristic); --accent-color: var(--accent-color-futuristic); --border-color: var(--border-color-futuristic); --highlight-color: var(--highlight-color-futuristic); --secondary-bg: var(--secondary-bg-futuristic); }
+body[data-font-size="small"] { --font-size-base: 14px; --font-size-arabic: 20px; --font-size-urdu: 14px; }
+body[data-font-size="medium"] { --font-size-base: 16px; --font-size-arabic: 24px; --font-size-urdu: 16px; }
+body[data-font-size="large"] { --font-size-base: 18px; --font-size-arabic: 28px; --font-size-urdu: 18px; }
+body[data-font-size="xlarge"] { --font-size-base: 20px; --font-size-arabic: 32px; --font-size-urdu: 20px; }
+body[data-show-translation="false"] .ayahTranslation { display: none; }
+</style>
+</head>
+<body data-theme="light" data-font-size="medium" data-show-translation="true" data-ui-lang="en">
+
+<div id="appLoader">
+  <span data-lang-key="en">Loading Quran Data...</span><span data-lang-key="ur">قرآن ڈیٹا لوڈ ہو رہا ہے...</span>
+  <progress id="loadProgress" max="100" value="0"></progress>
+  <p id="loadStatus"><span data-lang-key="en">Initializing...</span><span data-lang-key="ur">شروع کیا جا رہا ہے...</span></p>
+</div>
+
+<div id="appContainer">
+  <header id="appHeader">
+    <h2 id="headerTitle"><span data-lang-key="en">Quran App</span><span data-lang-key="ur">قرآن ایپ</span></h2>
+    <button id="fullscreenBtn" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+    </button>
+  </header>
+
+  <main id="mainContent">
+    <div id="readerView">
+      <div id="readerContent"></div>
+      <div id="paginationControls">
+        <button id="prevPageBtn"><span data-lang-key="en">Previous</span><span data-lang-key="ur">پچھلا</span></button>
+        <span id="pageInfo"></span>
+        <button id="nextPageBtn"><span data-lang-key="en">Next</span><span data-lang-key="ur">اگلا</span></button>
+      </div>
+    </div>
+    <div id="surahListView" class="active"></div>
+    <div id="searchView">
+      <div id="searchBox">
+        <input type="search" id="searchInput" placeholder="Search Ayahs (Arabic/Urdu)..." />
+        <button id="searchBtn"><span data-lang-key="en">Search</span><span data-lang-key="ur">تلاش کریں</span></button>
+      </div>
+      <div id="searchResults"></div>
+    </div>
+    <div id="bookmarksView">
+      <h2><span data-lang-key="en">Bookmarks</span><span data-lang-key="ur">بک مارکس</span></h2>
+      <div id="bookmarksList"></div>
+    </div>
+     <div id="notesView">
+      <h2><span data-lang-key="en">Notes</span><span data-lang-key="ur">نوٹس</span></h2>
+      <div id="notesList"></div>
+    </div>
+    <div id="settingsView">
+      <h2><span data-lang-key="en">Settings</span><span data-lang-key="ur">سیٹنگز</span></h2>
+      <div>
+        <label for="uiLanguageSelect"><span data-lang-key="en">UI Language</span><span data-lang-key="ur">UI زبان</span></label>
+        <select id="uiLanguageSelect">
+          <option value="en">English</option>
+          <option value="ur">اردو</option>
+        </select>
+      </div>
+       <div>
+        <label for="themeSelect"><span data-lang-key="en">Theme</span><span data-lang-key="ur">تھیم</span></label>
+        <select id="themeSelect">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="futuristic">Futuristic</option>
+        </select>
+      </div>
+      <div>
+        <label for="fontSizeSelect"><span data-lang-key="en">Font Size</span><span data-lang-key="ur">فونٹ سائز</span></label>
+        <select id="fontSizeSelect">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+            <option value="xlarge">XLarge</option>
+        </select>
+      </div>
+       <div>
+        <label for="showTranslationToggle"><span data-lang-key="en">Show Translation</span><span data-lang-key="ur">ترجمہ دکھائیں</span></label>
+        <input type="checkbox" id="showTranslationToggle" checked>
+      </div>
+       <div>
+          <label for="readingModeSelect"><span data-lang-key="en">Reading Mode</span><span data-lang-key="ur">پڑھنے کا موڈ</span></label>
+          <select id="readingModeSelect">
+            <option value="scroll">Ayah-by-Ayah Scroll</option>
+            <option value="paginate">Paginated</option>
+          </select>
+      </div>
+       <div id="linesPerPageSetting" class="hidden">
+          <label for="linesPerPageSlider"><span data-lang-key="en">Ayahs per Page:</span><span data-lang-key="ur">آیات فی صفحہ:</span> <span id="linesPerPageValue">10</span></label>
+          <input type="range" id="linesPerPageSlider" min="1" max="30" value="10">
+      </div>
+    </div>
+    <div id="historyView">
+        <h2><span data-lang-key="en">Reading History</span><span data-lang-key="ur">پڑھنے کی تاریخ</span></h2>
+        <div id="historyList"></div>
+         <button id="clearHistoryBtn"><span data-lang-key="en">Clear History</span><span data-lang-key="ur">تاریخ صاف کریں</span></button>
+    </div>
+     <div id="statsView">
+        <h2><span data-lang-key="en">Reading Statistics</span><span data-lang-key="ur">پڑھنے کے اعدادوشمار</span></h2>
+        <div class="stats-section">
+            <h3 data-original-text="Today"><span data-lang-key="en">Today</span><span data-lang-key="ur">آج</span></h3>
+            <p id="statsToday"></p>
+        </div>
+        <div class="stats-section">
+            <h3 data-original-text="This Month"><span data-lang-key="en">This Month</span><span data-lang-key="ur">اس مہینے</span></h3>
+            <p id="statsMonth"></p>
+        </div>
+        <div class="stats-section">
+            <h3 data-original-text="This Year"><span data-lang-key="en">This Year</span><span data-lang-key="ur">اس سال</span></h3>
+            <p id="statsYear"></p>
+        </div>
+         <div class="stats-section">
+            <h3 data-original-text="Total"><span data-lang-key="en">Total</span><span data-lang-key="ur">کل</span></h3>
+            <p id="statsTotal"></p>
+        </div>
+    </div>
+     <div id="remindersView">
+        <h2><span data-lang-key="en">Reminders</span><span data-lang-key="ur">یاد دہانیاں</span></h2>
+        <div id="addReminderForm">
+            <label for="reminderTime"><span data-lang-key="en">Time:</span><span data-lang-key="ur">وقت:</span></label>
+            <input type="datetime-local" id="reminderTime" required>
+            <label for="reminderText"><span data-lang-key="en">Reminder Text (Optional):</span><span data-lang-key="ur">یاد دہانی کا متن (اختیاری):</span></label>
+            <input type="text" id="reminderText" placeholder="e.g., Read Surah Al-Kahf">
+            <button id="addReminderBtn"><span data-lang-key="en">Add Reminder</span><span data-lang-key="ur">یاد دہانی شامل کریں</span></button>
+        </div>
+        <h3><span data-lang-key="en">Active Reminders</span><span data-lang-key="ur">فعال یاد دہانیاں</span></h3>
+        <div id="remindersList"></div>
+    </div>
+     <div id="backupRestoreView">
+        <h2><span data-lang-key="en">Backup & Restore</span><span data-lang-key="ur">بیک اپ اور بحال کریں</span></h2>
+        <p><span data-lang-key="en">Export your bookmarks, notes, progress, settings, and history.</span><span data-lang-key="ur">اپنے بک مارکس، نوٹس، پیشرفت، سیٹنگز، اور تاریخ ایکسپورٹ کریں۔</span></p>
+        <button id="exportDataBtn"><span data-lang-key="en">Export Data</span><span data-lang-key="ur">ڈیٹا ایکسپورٹ کریں</span></button>
+        <hr style="margin: 20px 0;">
+        <p><span data-lang-key="en">Import data from a previously exported file. This will overwrite current data.</span><span data-lang-key="ur">پہلے سے ایکسپورٹ کی گئی فائل سے ڈیٹا امپورٹ کریں۔ یہ موجودہ ڈیٹا کو اوور رائٹ کر دے گا۔</span></p>
+        <input type="file" id="importFile" accept=".json" style="display: block; margin-bottom: 10px;">
+        <button id="importDataBtn"><span data-lang-key="en">Import Data</span><span data-lang-key="ur">ڈیٹا امپورٹ کریں</span></button>
+    </div>
+  </main>
+
+  <nav id="bottomNav">
+    <button data-view="surahListView" class="active">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+      <span data-lang-key="en">Surahs</span><span data-lang-key="ur">سورتیں</span>
+    </button>
+    <button data-view="searchView">
+       <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+       <span data-lang-key="en">Search</span><span data-lang-key="ur">تلاش</span>
+    </button>
+    <button data-view="bookmarksView">
+       <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/></svg>
+       <span data-lang-key="en">Bookmarks</span><span data-lang-key="ur">بک مارکس</span>
+    </button>
+     <button data-view="notesView">
+       <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        <span data-lang-key="en">Notes</span><span data-lang-key="ur">نوٹس</span>
+    </button>
+    <button data-view="settingsView">
+      <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.08-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+      <span data-lang-key="en">Settings</span><span data-lang-key="ur">سیٹنگز</span>
+    </button>
+  </nav>
+</div>
+
+<div id="noteModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('noteModal')">&times;</button>
+    <h3 id="noteModalTitle"><span data-lang-key="en">Add/Edit Note</span><span data-lang-key="ur">نوٹ شامل/ترمیم کریں</span></h3>
+    <p id="noteModalAyahRef"></p>
+    <textarea id="noteModalTextarea" rows="5"></textarea>
+    <button id="saveNoteBtn"><span data-lang-key="en">Save Note</span><span data-lang-key="ur">نوٹ محفوظ کریں</span></button>
+  </div>
+</div>
+
+<script>
+// Constants
+const DB_NAME = 'quranDB';
+const DB_VERSION = 1;
+const AYAHS_STORE = 'ayahs';
+const BOOKMARKS_STORE = 'bookmarks';
+const NOTES_STORE = 'notes';
+const PROGRESS_STORE = 'progress';
+const HISTORY_STORE = 'history';
+const REMINDERS_STORE = 'reminders';
+const surahNames = ["Al-Fatihah", "Al-Baqarah", "Aal-e-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Taubah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha", "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadilah", "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr", "Al-Balad", "Ash-Shams", "Al-Layl", "Ad-Duha", "Ash-Sharh", "At-Tin", "Al-Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Adiyat", "Al-Qari'ah", "At-Takathur", "Al-Asr", "Al-Humazah", "Al-Fil", "Quraish", "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr", "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"];
+const surahNamesUrdu = ["الفاتحہ", "البقرہ", "آل عمران", "النساء", "المائدہ", "الانعام", "الاعراف", "الانفال", "التوبہ", "یونس", "ہود", "یوسف", "الرعد", "ابراہیم", "الحجر", "النحل", "الاسراء", "الکہف", "مریم", "طہٰ", "الانبیاء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء", "النمل", "القصص", "العنکبوت", "الروم", "لقمان", "السجدہ", "الاحزاب", "سبا", "فاطر", "یٰس", "الصافات", "ص", "الزمر", "غافر", "فصلت", "الشوریٰ", "الزخرف", "الدخان", "الجاثیہ", "الاحقاف", "محمد", "الفتح", "الحجرات", "ق", "الذاریات", "الطور", "النجم", "القمر", "الرحمٰن", "الواقعہ", "الحدید", "المجادلہ", "الحشر", "الممتحنہ", "الصف", "الجمعہ", "المنافقون", "التغابن", "الطلاق", "التحریم", "الملک", "القلم", "الحاقہ", "المعارج", "نوح", "الجن", "المزمل", "المدثر", "القیامہ", "الانسان", "المرسلات", "النباء", "النازعات", "عبس", "التکویر", "الانفطار", "المطففین", "الانشقاق", "البروج", "الطارق", "الاعلیٰ", "الغاشیہ", "الفجر", "البلد", "الشمس", "اللیل", "الضحیٰ", "الشرح", "التین", "العلق", "القدر", "البینہ", "الزلزلہ", "العادیات", "القارعہ", "التکاثر", "العصر", "الہمزہ", "الفیل", "قریش", "الماعون", "الکوثر", "الکافرون", "النصر", "المسد", "الاخلاص", "الفلق", "الناس"];
+
+// State Variables
+let db;
+let currentSurah = null;
+let currentAyah = null;
+let currentMode = 'scroll';
+let linesPerPage = 10;
+let currentPage = 1;
+let totalPages = 1;
+let currentAyahElements = []; // Holds ayah data for the currently loaded Surah
+let currentView = 'surahListView';
+let touchStartX = 0;
+let touchEndX = 0;
+let sessionStartTime = null;
+let activeReminders = [];
+
+// DOM Elements Cache
+const appLoader = document.getElementById('appLoader');
+const loadProgress = document.getElementById('loadProgress');
+const loadStatus = document.getElementById('loadStatus');
+const appContainer = document.getElementById('appContainer');
+const appHeader = document.getElementById('appHeader');
+const mainContent = document.getElementById('mainContent');
+const surahListView = document.getElementById('surahListView');
+const readerView = document.getElementById('readerView');
+const readerContent = document.getElementById('readerContent');
+const paginationControls = document.getElementById('paginationControls');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const pageInfo = document.getElementById('pageInfo');
+const bottomNav = document.getElementById('bottomNav');
+const headerTitle = document.getElementById('headerTitle');
+const searchView = document.getElementById('searchView');
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+const searchResults = document.getElementById('searchResults');
+const bookmarksView = document.getElementById('bookmarksView');
+const bookmarksList = document.getElementById('bookmarksList');
+const notesView = document.getElementById('notesView');
+const notesList = document.getElementById('notesList');
+const settingsView = document.getElementById('settingsView');
+const themeSelect = document.getElementById('themeSelect');
+const fontSizeSelect = document.getElementById('fontSizeSelect');
+const showTranslationToggle = document.getElementById('showTranslationToggle');
+const uiLanguageSelect = document.getElementById('uiLanguageSelect');
+const readingModeSelect = document.getElementById('readingModeSelect');
+const linesPerPageSetting = document.getElementById('linesPerPageSetting');
+const linesPerPageSlider = document.getElementById('linesPerPageSlider');
+const linesPerPageValue = document.getElementById('linesPerPageValue');
+const noteModal = document.getElementById('noteModal');
+const noteModalAyahRef = document.getElementById('noteModalAyahRef');
+const noteModalTextarea = document.getElementById('noteModalTextarea');
+const saveNoteBtn = document.getElementById('saveNoteBtn');
+const historyView = document.getElementById('historyView');
+const historyList = document.getElementById('historyList');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const statsView = document.getElementById('statsView');
+const statsToday = document.getElementById('statsToday');
+const statsMonth = document.getElementById('statsMonth');
+const statsYear = document.getElementById('statsYear');
+const statsTotal = document.getElementById('statsTotal');
+const remindersView = document.getElementById('remindersView');
+const reminderTimeInput = document.getElementById('reminderTime');
+const reminderTextInput = document.getElementById('reminderText');
+const addReminderBtn = document.getElementById('addReminderBtn');
+const remindersList = document.getElementById('remindersList');
+const backupRestoreView = document.getElementById('backupRestoreView');
+const exportDataBtn = document.getElementById('exportDataBtn');
+const importFile = document.getElementById('importFile');
+const importDataBtn = document.getElementById('importDataBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+// --- Utility Functions ---
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => { clearTimeout(timeout); func(...args); };
+        clearTimeout(timeout); timeout = setTimeout(later, wait);
+    };
+}
+
+function localize(key) {
+    const lang = document.body.getAttribute('data-ui-lang') || 'en';
+    const translations = {
+        en: { /* English keys */
+             'Quran App': 'Quran App', 'Surahs': 'Surahs', 'Search': 'Search', 'Bookmarks': 'Bookmarks', 'Notes': 'Notes', 'Settings': 'Settings',
+             'Initializing...': 'Initializing...', 'Loading Quran Data...': 'Loading Quran Data...', 'Fetching data file...': 'Fetching data file...',
+             'Parsing and storing data...': 'Parsing and storing data...', 'Storing Ayah': 'Storing Ayah',
+             'Error storing data.': 'Error storing data.', 'Error': 'Error', 'Ensure data/data.AM exists and is accessible.': 'Ensure data/data.AM exists and is accessible.',
+             'Surah': 'Surah', 'Previous': 'Previous', 'Next': 'Next', 'Page': 'Page', 'of': 'of',
+             'Bookmark': 'Bookmark', 'Unbookmark': 'Unbookmark', 'Note': 'Note', 'Your note...': 'Your note...',
+             'Remove': 'Remove', 'Edit': 'Edit', 'Delete': 'Delete', 'Save Note': 'Save Note', 'Add/Edit Note': 'Add/Edit Note',
+             'UI Language': 'UI Language', 'Theme': 'Theme', 'Font Size': 'Font Size', 'Show Translation': 'Show Translation',
+             'Reading Mode': 'Reading Mode', 'Ayahs per Page:': 'Ayahs per Page:', 'Ayah-by-Ayah Scroll': 'Ayah-by-Ayah Scroll', 'Paginated': 'Paginated',
+             'Reading History': 'Reading History', 'Clear History': 'Clear History', 'No reading history recorded yet.': 'No reading history recorded yet.',
+             'Are you sure you want to clear all reading history? This cannot be undone.': 'Are you sure you want to clear all reading history? This cannot be undone.',
+             'Failed to clear history.': 'Failed to clear history.', 'Displaying last 200 history entries.': 'Displaying last 200 history entries.',
+             'Reading Statistics': 'Reading Statistics', 'Today': 'Today', 'This Month': 'This Month', 'This Year': 'This Year', 'Total': 'Total',
+             'Ayahs Read': 'Ayahs Read', 'Time Spent': 'Time Spent', 'Error loading stats.': 'Error loading stats.', 'Calculating...': 'Calculating...',
+             'Reminders': 'Reminders', 'Time:': 'Time:', 'Reminder Text (Optional):': 'Reminder Text (Optional):', 'Add Reminder': 'Add Reminder',
+             'Active Reminders': 'Active Reminders', 'Please select a time for the reminder.': 'Please select a time for the reminder.',
+             'Please select a valid future time.': 'Please select a valid future time.', 'Failed to save reminder.': 'Failed to save reminder.',
+             'No active reminders.': 'No active reminders.', 'Delete this reminder?': 'Delete this reminder?', 'Quran Reading Reminder': 'Quran Reading Reminder',
+             'Reminder set for': 'Reminder set for', 'Quran reading reminder at': 'Quran reading reminder at',
+             'Backup & Restore': 'Backup & Restore', 'Export Data': 'Export Data', 'Import Data': 'Import Data',
+             'Export your bookmarks, notes, progress, settings, and history.': 'Export your bookmarks, notes, progress, settings, and history.',
+             'Import data from a previously exported file. This will overwrite current data.': 'Import data from a previously exported file. This will overwrite current data.',
+             'Data exported successfully!': 'Data exported successfully!', 'Export failed': 'Export failed',
+             'Please select a backup file to import.': 'Please select a backup file to import.', 'Invalid file type. Please select a .json backup file.': 'Invalid file type. Please select a .json backup file.',
+             'Importing data will overwrite all current bookmarks, notes, progress, settings, and history. Are you sure you want to continue?': 'Importing data will overwrite all current bookmarks, notes, progress, settings, and history. Are you sure you want to continue?',
+             'Data imported successfully! The app will now reload.': 'Data imported successfully! The app will now reload.', 'Import failed': 'Import failed',
+             'Failed to read the backup file.': 'Failed to read the backup file.', 'Importing data...': 'Importing data...', 'Import complete. Reloading...': 'Import complete. Reloading...',
+             'Are you sure you want to delete this note?': 'Are you sure you want to delete this note?',
+             'No bookmarks yet.': 'No bookmarks yet.', 'No notes yet.': 'No notes yet.',
+             'Loading bookmarks...': 'Loading bookmarks...', 'Loading notes...': 'Loading notes...', 'Loading history...': 'Loading history...', 'Loading reminders...': 'Loading reminders...',
+             'Loading Ayahs...': 'Loading Ayahs...', 'No Ayahs found for this Surah.': 'No Ayahs found for this Surah.', 'Error loading Ayahs': 'Error loading Ayahs',
+             'Error accessing database.': 'Error accessing database.', 'Rendering Ayahs...': 'Rendering Ayahs...', 'No Ayahs to display.': 'No Ayahs to display.',
+             'Searching...': 'Searching...', 'Please enter at least 2 characters.': 'Please enter at least 2 characters.',
+             'No results found.': 'No results found.', 'Found': 'Found', 'results:': 'results:', 'Error during search:': 'Error during search:', 'Error accessing database for search.': 'Error accessing database for search.',
+             'App Opened': 'App Opened', 'App Closed': 'App Closed', 'Session': 'Session', 'Initialization Error': 'Initialization Error', 'Please refresh or check console.': 'Please refresh or check console.',
+             'Error loading bookmarks:': 'Error loading bookmarks:', 'Error loading notes:': 'Error loading notes:', 'Error loading history:': 'Error loading history:', 'Error loading reminders:': 'Error loading reminders:',
+             'Failed to parse or store any data.': 'Failed to parse or store any data.'
+        },
+        ur: { /* Urdu keys */
+            'Quran App': 'قرآن ایپ', 'Surahs': 'سورتیں', 'Search': 'تلاش', 'Bookmarks': 'بک مارکس', 'Notes': 'نوٹس', 'Settings': 'سیٹنگز',
+             'Initializing...': 'شروع کیا جا رہا ہے...', 'Loading Quran Data...': 'قرآن ڈیٹا لوڈ ہو رہا ہے...', 'Fetching data file...': 'ڈیٹا فائل حاصل کی جا رہی ہے...',
+             'Parsing and storing data...': 'ڈیٹا پارس اور اسٹور کیا جا رہا ہے...', 'Storing Ayah': 'آیت اسٹور کی جا رہی ہے',
+             'Error storing data.': 'ڈیٹا اسٹور کرنے میں خرابی۔', 'Error': 'خرابی', 'Ensure data/data.AM exists and is accessible.': 'یقینی بنائیں data/data.AM موجود ہے اور قابل رسائی ہے۔',
+             'Surah': 'سورۃ', 'Previous': 'پچھلا', 'Next': 'اگلا', 'Page': 'صفحہ', 'of': 'از',
+             'Bookmark': 'بک مارک', 'Unbookmark': 'بک مارک ہٹائیں', 'Note': 'نوٹ', 'Your note...': 'آپ کا نوٹ...',
+             'Remove': 'ہٹائیں', 'Edit': 'ترمیم', 'Delete': 'حذف کریں', 'Save Note': 'نوٹ محفوظ کریں', 'Add/Edit Note': 'نوٹ شامل/ترمیم کریں',
+             'UI Language': 'UI زبان', 'Theme': 'تھیم', 'Font Size': 'فونٹ سائز', 'Show Translation': 'ترجمہ دکھائیں',
+             'Reading Mode': 'پڑھنے کا موڈ', 'Ayahs per Page:': 'آیات فی صفحہ:', 'Ayah-by-Ayah Scroll': 'آیت بہ آیت اسکرول', 'Paginated': 'صفحہ بند',
+             'Reading History': 'پڑھنے کی تاریخ', 'Clear History': 'تاریخ صاف کریں', 'No reading history recorded yet.': 'پڑھنے کی کوئی تاریخ ریکارڈ نہیں ہوئی۔',
+             'Are you sure you want to clear all reading history? This cannot be undone.': 'کیا آپ واقعی پڑھنے کی تمام تاریخ صاف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں کیا جا سکتا۔',
+             'Failed to clear history.': 'تاریخ صاف کرنے میں ناکامی۔', 'Displaying last 200 history entries.': 'آخری 200 تاریخ کے اندراجات دکھائے جا رہے ہیں۔',
+             'Reading Statistics': 'پڑھنے کے اعدادوشمار', 'Today': 'آج', 'This Month': 'اس مہینے', 'This Year': 'اس سال', 'Total': 'کل',
+             'Ayahs Read': 'پڑھی گئی آیات', 'Time Spent': 'صرف شدہ وقت', 'Error loading stats.': 'اعدادوشمار لوڈ کرنے میں خرابی۔', 'Calculating...': 'حساب لگایا جا رہا ہے...',
+             'Reminders': 'یاد دہانیاں', 'Time:': 'وقت:', 'Reminder Text (Optional):': 'یاد دہانی کا متن (اختیاری):', 'Add Reminder': 'یاد دہانی شامل کریں',
+             'Active Reminders': 'فعال یاد دہانیاں', 'Please select a time for the reminder.': 'براہ کرم یاد دہانی کے لیے وقت منتخب کریں۔',
+             'Please select a valid future time.': 'براہ کرم مستقبل کا درست وقت منتخب کریں۔', 'Failed to save reminder.': 'یاد دہانی محفوظ کرنے میں ناکامی۔',
+             'No active reminders.': 'کوئی فعال یاد دہانی نہیں۔', 'Delete this reminder?': 'کیا یہ یاد دہانی حذف کرنی ہے؟', 'Quran Reading Reminder': 'قرآن پڑھنے کی یاد دہانی',
+             'Reminder set for': 'یاد دہانی مقرر ہے برائے', 'Quran reading reminder at': 'قرآن پڑھنے کی یاد دہانی بوقت',
+             'Backup & Restore': 'بیک اپ اور بحال کریں', 'Export Data': 'ڈیٹا ایکسپورٹ کریں', 'Import Data': 'ڈیٹا امپورٹ کریں',
+             'Export your bookmarks, notes, progress, settings, and history.': 'اپنے بک مارکس، نوٹس، پیشرفت، سیٹنگز، اور تاریخ ایکسپورٹ کریں۔',
+             'Import data from a previously exported file. This will overwrite current data.': 'پہلے سے ایکسپورٹ کی گئی فائل سے ڈیٹا امپورٹ کریں۔ یہ موجودہ ڈیٹا کو اوور رائٹ کر دے گا۔',
+             'Data exported successfully!': 'ڈیٹا کامیابی سے ایکسپورٹ ہو گیا!', 'Export failed': 'ایکسپورٹ ناکام',
+             'Please select a backup file to import.': 'براہ کرم امپورٹ کرنے کے لیے بیک اپ فائل منتخب کریں۔', 'Invalid file type. Please select a .json backup file.': 'غلط فائل کی قسم۔ براہ کرم .json بیک اپ فائل منتخب کریں۔',
+             'Importing data will overwrite all current bookmarks, notes, progress, settings, and history. Are you sure you want to continue?': 'ڈیٹا امپورٹ کرنے سے تمام موجودہ بک مارکس، نوٹس، پیشرفت، سیٹنگز، اور تاریخ اوور رائٹ ہو جائے گی۔ کیا آپ واقعی جاری رکھنا چاہتے ہیں؟',
+             'Data imported successfully! The app will now reload.': 'ڈیٹا کامیابی سے امپورٹ ہو گیا! ایپ اب دوبارہ لوڈ ہو گی۔', 'Import failed': 'امپورٹ ناکام',
+             'Failed to read the backup file.': 'بیک اپ فائل پڑھنے میں ناکامی۔', 'Importing data...': 'ڈیٹا امپورٹ کیا جا رہا ہے...', 'Import complete. Reloading...': 'امپورٹ مکمل۔ دوبارہ لوڈ کیا جا رہا ہے۔۔۔',
+             'Are you sure you want to delete this note?': 'کیا آپ واقعی یہ نوٹ حذف کرنا چاہتے ہیں؟',
+              'No bookmarks yet.': 'ابھی تک کوئی بک مارک نہیں۔', 'No notes yet.': 'ابھی تک کوئی نوٹ نہیں۔',
+             'Loading bookmarks...': 'بک مارکس لوڈ ہو رہے ہیں...', 'Loading notes...': 'نوٹس لوڈ ہو رہے ہیں...', 'Loading history...': 'تاریخ لوڈ ہو رہی ہے...', 'Loading reminders...': 'یاد دہانیاں لوڈ ہو رہی ہیں...',
+             'Loading Ayahs...': 'آیات لوڈ ہو رہی ہیں...', 'No Ayahs found for this Surah.': 'اس سورۃ کے لیے کوئی آیات نہیں ملیں۔', 'Error loading Ayahs': 'آیات لوڈ کرنے میں خرابی',
+             'Error accessing database.': 'ڈیٹا بیس تک رسائی میں خرابی۔', 'Rendering Ayahs...': 'آیات رینڈر کی جا رہی ہیں...', 'No Ayahs to display.': 'دکھانے کے لیے کوئی آیات نہیں۔',
+             'Searching...': 'تلاش جاری ہے...', 'Please enter at least 2 characters.': 'براہ کرم کم از کم 2 حروف درج کریں۔',
+             'No results found.': 'کوئی نتائج نہیں ملے۔', 'Found': 'ملے', 'results:': 'نتائج:', 'Error during search:': 'تلاش کے دوران خرابی:', 'Error accessing database for search.': 'تلاش کے لیے ڈیٹا بیس تک رسائی میں خرابی۔',
+             'App Opened': 'ایپ کھولی گئی', 'App Closed': 'ایپ بند ہوئی', 'Session': 'سیشن', 'Initialization Error': 'شروع کرنے میں خرابی', 'Please refresh or check console.': 'براہ کرم ریفریش کریں یا کنسول چیک کریں۔',
+             'Error loading bookmarks:': 'بک مارکس لوڈ کرنے میں خرابی:', 'Error loading notes:': 'نوٹس لوڈ کرنے میں خرابی:', 'Error loading history:': 'تاریخ لوڈ کرنے میں خرابی:', 'Error loading reminders:': 'یاد دہانیاں لوڈ کرنے میں خرابی:',
+             'Failed to parse or store any data.': 'کوئی ڈیٹا پارس یا اسٹور کرنے میں ناکامی۔'
+        }
+    };
+    return translations[lang]?.[key] || translations['en']?.[key] || key;
+}
+
+function localizeUI() {
+    const lang = document.body.getAttribute('data-ui-lang') || 'en';
+    // Dynamic elements using textContent directly as key (less robust but simpler for now)
+    document.querySelectorAll('button, label, h2, h3, p > span, option, #pageInfo, #linesPerPageValue').forEach(el => {
+        const key = el.getAttribute('data-original-text') || el.textContent?.trim();
+        if (!key) return;
+        if (!el.hasAttribute('data-original-text')) { el.setAttribute('data-original-text', key); }
+        const localizedText = localize(key);
+        if (localizedText !== key && el.textContent !== localizedText && el.id !== 'pageInfo' && el.id !== 'linesPerPageValue') {
+           // Need to handle elements with children carefully
+           if (el.children.length === 0 || el.tagName === 'OPTION' || el.tagName === 'BUTTON') {
+                el.textContent = localizedText;
+           } else {
+                // Attempt to replace only the first text node if it matches the key
+                const firstChild = el.childNodes[0];
+                if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent.trim() === key) {
+                    firstChild.textContent = localizedText;
+                }
+           }
+        }
+    });
+    // Update placeholders
+    document.querySelectorAll('input[placeholder]').forEach(el => {
+         const key = el.getAttribute('data-original-placeholder') || el.placeholder?.trim();
+         if (!key) return;
+         if (!el.hasAttribute('data-original-placeholder')) { el.setAttribute('data-original-placeholder', key); }
+         const localizedText = localize(key);
+         if (localizedText !== key) el.placeholder = localizedText;
+    });
+    // Special case for Page x of y
+    if (pageInfo.textContent || currentPage > 0) {
+         pageInfo.textContent = `${localize('Page')} ${currentPage} ${localize('of')} ${totalPages}`;
+    }
+    // Special case for Ayahs per Page: X
+    const linesLabel = document.querySelector('label[for="linesPerPageSlider"]');
+    if (linesLabel) {
+        const spanValue = linesLabel.querySelector('#linesPerPageValue');
+        const textNode = linesLabel.childNodes[0]; // Assuming text is the first node
+        if(textNode && textNode.nodeType === Node.TEXT_NODE){
+            textNode.textContent = `${localize('Ayahs per Page:')} `;
+        }
+        if (spanValue) spanValue.textContent = linesPerPage;
+    }
+    // Update button texts that change state dynamically
+    document.querySelectorAll('.bookmarkBtn, .removeBookmarkBtn, .editNoteBtn, .deleteNoteBtn, .deleteReminderBtn').forEach(btn => {
+        let key = '';
+        if (btn.classList.contains('bookmarkBtn')) { key = btn.closest('.ayah')?.classList.contains('bookmarked') ? 'Unbookmark' : 'Bookmark'; }
+        else if (btn.classList.contains('removeBookmarkBtn')) { key = 'Remove'; }
+        else if (btn.classList.contains('editNoteBtn')) { key = 'Edit'; }
+        else if (btn.classList.contains('deleteNoteBtn') || btn.classList.contains('deleteReminderBtn')) { key = 'Delete'; }
+        if(key) {
+            btn.textContent = localize(key);
+            btn.setAttribute('aria-label', localize(key));
+        }
+    });
+    // Other specific buttons
+    document.getElementById('searchBtn').textContent = localize('Search');
+    document.getElementById('saveNoteBtn').textContent = localize('Save Note');
+    document.getElementById('clearHistoryBtn').textContent = localize('Clear History');
+    document.getElementById('addReminderBtn').textContent = localize('Add Reminder');
+    document.getElementById('exportDataBtn').textContent = localize('Export Data');
+    document.getElementById('importDataBtn').textContent = localize('Import Data');
+    document.getElementById('prevPageBtn').textContent = localize('Previous');
+    document.getElementById('nextPageBtn').textContent = localize('Next');
+
+    if (currentView === 'surahListView') { renderSurahList(); }
+    updateViewTitle(currentView);
+}
+
+function normalizeArabic(text) {
+    if (!text) return '';
+    text = text.replace(/[\u064B-\u065F\u0670]/g, '');
+    text = text.replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627');
+    text = text.replace(/\u0649/g, '\u064A');
+    text = text.replace(/\u0629/g, '\u0647');
+    text = text.replace(/\u0640/g, '');
+    return text;
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
+
+// --- IndexedDB Operations ---
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = event => {
+      db = event.target.result;
+      if (!db.objectStoreNames.contains(AYAHS_STORE)) {
+        const ayahStore = db.createObjectStore(AYAHS_STORE, { keyPath: 'key' });
+        ayahStore.createIndex('surahIndex', 'surah', { unique: false });
+        ayahStore.createIndex('surahAyahIndex', ['surah', 'ayah'], { unique: true });
+      }
+       if (!db.objectStoreNames.contains(BOOKMARKS_STORE)) { db.createObjectStore(BOOKMARKS_STORE, { keyPath: 'key' }); }
+       if (!db.objectStoreNames.contains(NOTES_STORE)) { db.createObjectStore(NOTES_STORE, { keyPath: 'key' }); }
+       if (!db.objectStoreNames.contains(PROGRESS_STORE)) { db.createObjectStore(PROGRESS_STORE, { keyPath: 'key' }); }
+       if (!db.objectStoreNames.contains(HISTORY_STORE)) { const historyStore = db.createObjectStore(HISTORY_STORE, { keyPath: 'id', autoIncrement: true }); historyStore.createIndex('timestampIndex', 'timestamp', { unique: false }); }
+       if (!db.objectStoreNames.contains(REMINDERS_STORE)) { const reminderStore = db.createObjectStore(REMINDERS_STORE, { keyPath: 'id', autoIncrement: true }); reminderStore.createIndex('timeIndex', 'time', { unique: false }); }
+    };
+    request.onsuccess = event => { db = event.target.result; console.log("Database opened successfully"); resolve(db); };
+    request.onerror = event => { console.error("Database error: ", event.target.error); reject("Database error: " + event.target.error?.message); };
+  });
+}
+
+function getObjectStore(storeName, mode) {
+    if (!db) { throw new Error("Database not available"); }
+    const transaction = db.transaction(storeName, mode);
+    transaction.onerror = event => console.error(`Transaction error on ${storeName}:`, event.target.error);
+    return transaction.objectStore(storeName);
+}
+
+async function saveData(storeName, data) {
+    return new Promise((resolve, reject) => {
+        try {
+            const store = getObjectStore(storeName, 'readwrite');
+            const request = store.put(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(`Error saving to ${storeName}: ${event.target.error?.message}`);
+        } catch (e) { reject(`Failed to initiate save transaction for ${storeName}: ${e.message}`); }
+    });
+}
+
+async function getData(storeName, key) {
+    return new Promise((resolve, reject) => {
+       try {
+            const store = getObjectStore(storeName, 'readonly');
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(`Error getting from ${storeName}: ${event.target.error?.message}`);
+        } catch (e) { reject(`Failed to initiate get transaction for ${storeName}: ${e.message}`); }
+    });
+}
+
+async function getAllData(storeName) {
+    return new Promise((resolve, reject) => {
+        try {
+            const store = getObjectStore(storeName, 'readonly');
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(`Error getting all from ${storeName}: ${event.target.error?.message}`);
+        } catch (e) { reject(`Failed to initiate getAll transaction for ${storeName}: ${e.message}`); }
+    });
+}
+
+async function deleteData(storeName, key) {
+    return new Promise((resolve, reject) => {
+       try {
+            const store = getObjectStore(storeName, 'readwrite');
+            const request = store.delete(key);
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(`Error deleting from ${storeName}: ${event.target.error?.message}`);
+        } catch (e) { reject(`Failed to initiate delete transaction for ${storeName}: ${e.message}`); }
+    });
+}
+
+async function clearStore(storeName) {
+    return new Promise((resolve, reject) => {
+        try {
+            const store = getObjectStore(storeName, 'readwrite');
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(`Error clearing ${storeName}: ${event.target.error?.message}`);
+        } catch (e) { reject(`Failed to initiate clear transaction for ${storeName}: ${e.message}`); }
+    });
+}
+
+// --- Data Loading & Parsing ---
+function parseAyahLine(line) {
+    const regex = /^(.*?) *ترجمہ: *(.*?)(?:<br\s*\/?>|\n|<br>)\s*س\s*(\d+)\s*آ\s*(\d+)\s*$/i;
+    const match = line.trim().match(regex);
+    if (match) {
+        const arabic = match[1].trim();
+        const urdu = match[2].trim();
+        const surah = parseInt(match[3], 10);
+        const ayah = parseInt(match[4], 10);
+        if (!arabic || !urdu || isNaN(surah) || isNaN(ayah) || surah < 1 || surah > 114 || ayah < 1) {
+            console.warn(`Parsed invalid data: S:${surah} A:${ayah} from line: ${line}`); return null;
+        }
+        const key = `S${String(surah).padStart(3, '0')}A${String(ayah).padStart(3, '0')}`;
+        return { key, surah, ayah, arabic, urdu };
+    }
+    return null;
+}
+
+async function loadDataIntoDB() {
+    try {
+        loadStatus.textContent = localize('Fetching data file...');
+        const response = await fetch('data/data.AM'); // Ensure this path is correct relative to index.html
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const text = await response.text();
+        const lines = text.split('\n'); // Keep empty lines to potentially identify format issues
+        const totalLines = lines.length;
+        loadProgress.max = totalLines;
+        loadStatus.textContent = localize('Parsing and storing data...');
+
+        const transaction = db.transaction(AYAHS_STORE, 'readwrite');
+        const store = transaction.objectStore(AYAHS_STORE);
+        let processedCount = 0; let storedCount = 0; let skippedCount = 0;
+
+        return new Promise((resolve, reject) => {
+            transaction.oncomplete = () => {
+                console.log(`Data load transaction complete. Stored: ${storedCount}, Skipped: ${skippedCount} of ${processedCount}`);
+                if (storedCount > 0) {
+                     localStorage.setItem('isDataLoaded', 'true');
+                     appLoader.style.opacity = '0'; setTimeout(() => appLoader.classList.add('hidden'), 500); resolve();
+                } else {
+                     loadStatus.textContent = localize('Failed to parse or store any data.'); reject('No data stored.');
+                }
+            };
+            transaction.onerror = event => {
+                console.error('Transaction error during data load:', event.target.error);
+                loadStatus.textContent = `${localize('Error storing data.')}: ${event.target.error?.message}`; reject(event.target.error);
+            };
+
+            lines.forEach((line, index) => {
+                processedCount++;
+                const trimmedLine = line.trim();
+                if (!trimmedLine) { // Skip empty lines silently
+                    skippedCount++;
+                    return;
+                }
+                const ayahData = parseAyahLine(trimmedLine);
+                if (ayahData) {
+                    const request = store.put(ayahData);
+                    request.onsuccess = () => { storedCount++; };
+                    request.onerror = event => { console.error(`Error storing Ayah ${ayahData.key}:`, event.target.error); }; // Log error but continue
+                } else {
+                     skippedCount++;
+                     console.warn(`Skipping invalid format line ${index + 1}: ${trimmedLine.substring(0, 100)}...`);
+                }
+                if (processedCount % 100 === 0 || processedCount === totalLines) {
+                    loadProgress.value = processedCount;
+                    loadStatus.textContent = `${localize('Storing Ayah')} ${processedCount}/${totalLines}`;
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Failed to load or process data file:', error);
+        loadStatus.textContent = `${localize('Error')}: ${error.message}. ${localize('Ensure data/data.AM exists and is accessible.')}`;
+        throw error;
+    }
+}
+
+// --- UI Rendering & View Management ---
+function renderSurahList() {
+    surahListView.innerHTML = '';
+    const lang = document.body.getAttribute('data-ui-lang') || 'en';
+    const names = lang === 'ur' ? surahNamesUrdu : surahNames;
+    const fragment = document.createDocumentFragment();
+    for (let i = 1; i <= 114; i++) {
+        const div = document.createElement('div');
+        div.className = 'surah-list-item';
+        div.dataset.surah = i;
+        div.innerHTML = `<div><span class="surah-list-item-number">${i}.</span><span class="surah-list-item-name">${names[i-1]}</span></div><span class="surah-list-item-info"></span>`;
+        fragment.appendChild(div);
+    }
+    surahListView.appendChild(fragment);
+    // Title updated in localizeUI or switchView
+}
+
+async function renderAyah(ayahData) {
+    const div = document.createElement('div');
+    div.className = 'ayah';
+    div.dataset.key = ayahData.key; div.dataset.surah = ayahData.surah; div.dataset.ayah = ayahData.ayah;
+
+    const [isBookmarked, noteData] = await Promise.all([
+        getData(BOOKMARKS_STORE, ayahData.key),
+        getData(NOTES_STORE, ayahData.key)
+    ]).catch(e => { console.error(`Error fetching details for ${ayahData.key}`, e); return [null, null]; });
+
+    const noteText = noteData ? noteData.note : '';
+    if (isBookmarked) div.classList.add('bookmarked');
+    if (noteText) div.classList.add('has-note');
+
+    div.innerHTML = `
+        <div class="ayahArabic">${ayahData.arabic}</div>
+        <div class="ayahTranslation">${ayahData.urdu}</div>
+        <div class="ayahMeta">Surah ${ayahData.surah}, Ayah ${ayahData.ayah}</div>
+        <div class="ayahActions">
+            <button class="ayahActionButton bookmarkBtn" aria-label="${localize(isBookmarked ? 'Unbookmark' : 'Bookmark')}">${localize(isBookmarked ? 'Unbookmark' : 'Bookmark')}</button>
+            <button class="ayahActionButton noteBtn" aria-label="${localize('Note')}">${localize('Note')}</button>
+        </div>
+        <textarea class="ayahNoteInput" readonly placeholder="${localize('Your note...')}">${noteText || ''}</textarea>
+    `;
+    const noteDisplay = div.querySelector('.ayahNoteInput');
+    if(noteText) { noteDisplay.style.display = 'block'; } else { noteDisplay.style.display = 'none'; }
+    return div;
+}
+
+async function renderScrollMode() {
+    readerContent.innerHTML = '';
+    readerContent.classList.remove('paginated');
+    readerContent.style.overflowY = 'auto';
+    paginationControls.classList.remove('visible');
+    document.getElementById('pageContainer')?.remove();
+    const fragment = document.createDocumentFragment();
+    for (const ayahData of currentAyahElements) { fragment.appendChild(await renderAyah(ayahData)); }
+    readerContent.appendChild(fragment);
+}
+
+async function renderPaginatedMode() {
+    readerContent.classList.add('paginated');
+    readerContent.style.overflowY = 'hidden';
+    paginationControls.classList.add('visible');
+    readerContent.innerHTML = '';
+    let pageContainer = document.getElementById('pageContainer');
+    if (!pageContainer) { pageContainer = document.createElement('div'); pageContainer.id = 'pageContainer'; pageContainer.style.flexGrow = '1'; pageContainer.style.overflowY = 'auto'; readerContent.appendChild(pageContainer); }
+    else { pageContainer.innerHTML = ''; }
+
+    totalPages = Math.ceil(currentAyahElements.length / linesPerPage);
+    currentPage = Math.max(1, Math.min(currentPage, totalPages));
+    const start = (currentPage - 1) * linesPerPage; const end = start + linesPerPage;
+    const pageAyahs = currentAyahElements.slice(start, end);
+    const fragment = document.createDocumentFragment();
+    for (const ayahData of pageAyahs) { fragment.appendChild(await renderAyah(ayahData)); }
+    pageContainer.appendChild(fragment);
+    pageInfo.textContent = `${localize('Page')} ${currentPage} ${localize('of')} ${totalPages}`;
+    prevPageBtn.disabled = currentPage === 1; nextPageBtn.disabled = currentPage === totalPages;
+}
+
+async function renderAyahsForMode() {
+    if (!currentAyahElements || currentAyahElements.length === 0) {
+         readerContent.innerHTML = `<p style="text-align:center;">${localize('No Ayahs to display.')}</p>`; return;
+    }
+    readerContent.innerHTML = `<p style="text-align:center;">${localize('Rendering Ayahs...')}</p>`;
+    await new Promise(resolve => setTimeout(resolve, 10)); // Allow UI update
+    try {
+        if (currentMode === 'scroll') { await renderScrollMode(); }
+        else if (currentMode === 'paginate') { await renderPaginatedMode(); }
+        highlightCurrentAyah(currentAyah); // Highlight after rendering
+    } catch(error) {
+        console.error("Error rendering ayahs:", error);
+        readerContent.innerHTML = `<p style="text-align:center;">Error rendering Ayahs: ${error.message}</p>`;
+    }
+}
+// Make applyReadingMode globally available
+window.applyReadingMode = renderAyahsForMode; // Assign to window scope
+console.log("applyReadingMode defined on window scope");
+
+function applyReadingModeUIChanges() {
+     linesPerPageSetting.style.display = currentMode === 'paginate' ? 'block' : 'none';
+     if (currentView === 'readerView') {
+         if (currentMode === 'paginate') {
+             readerContent.classList.add('paginated'); paginationControls.classList.add('visible'); readerContent.style.overflowY = 'hidden';
+             document.getElementById('pageContainer')?.style.setProperty('overflow-y', 'auto');
+         } else {
+             readerContent.classList.remove('paginated'); paginationControls.classList.remove('visible'); readerContent.style.overflowY = 'auto';
+             const pageContainer = document.getElementById('pageContainer'); if (pageContainer) pageContainer.style.overflowY = 'hidden';
+         }
+     }
+}
+
+function switchView(viewId) {
+    if (currentView === viewId && document.getElementById(viewId)?.classList.contains('active')) return;
+
+    console.log(`Switching view from '${currentView}' to '${viewId}'`);
+    const views = mainContent.children;
+    for (let view of views) {
+        if (view.id === viewId) { view.classList.add('active'); view.scrollTop = 0; }
+        else { view.classList.remove('active'); }
+    }
+    const oldView = currentView;
+    currentView = viewId;
+    updateNavActiveState(viewId);
+    fullscreenBtn.style.display = viewId === 'readerView' ? 'block' : 'none';
+    if (viewId !== 'readerView') { exitFullscreen(); }
+
+    // Load data for specific views if switching TO them
+    if (viewId !== oldView) {
+        if (viewId === 'surahListView' && surahListView.innerHTML === '') renderSurahList();
+        if (viewId === 'bookmarksView') loadBookmarks();
+        if (viewId === 'notesView') loadNotes();
+        if (viewId === 'historyView') loadHistory();
+        if (viewId === 'statsView') displayStats();
+        if (viewId === 'remindersView') loadReminders();
+    }
+    updateViewTitle(viewId);
+}
+
+function updateViewTitle(viewId) {
+     let titleKey = 'Quran App';
+     if (viewId === 'surahListView') titleKey = 'Surahs';
+     else if (viewId === 'searchView') titleKey = 'Search';
+     else if (viewId === 'bookmarksView') titleKey = 'Bookmarks';
+     else if (viewId === 'notesView') titleKey = 'Notes';
+     else if (viewId === 'settingsView') titleKey = 'Settings';
+     else if (viewId === 'historyView') titleKey = 'Reading History';
+     else if (viewId === 'statsView') titleKey = 'Reading Statistics';
+     else if (viewId === 'remindersView') titleKey = 'Reminders';
+     else if (viewId === 'backupRestoreView') titleKey = 'Backup & Restore';
+     else if (viewId === 'readerView' && currentSurah) {
+        const lang = document.body.getAttribute('data-ui-lang') || 'en';
+        const surahName = (lang === 'ur' ? surahNamesUrdu : surahNames)[currentSurah - 1] || `Surah ${currentSurah}`;
+        titleKey = `${localize('Surah')} ${surahName} (${currentSurah})`;
+     }
+     updateHeaderTitle(localize(titleKey));
+}
+
+function updateNavActiveState(activeViewId) {
+    const buttons = bottomNav.querySelectorAll('button');
+    buttons.forEach(button => { button.classList.remove('active'); }); // Clear all first
+    let targetButton = bottomNav.querySelector(`button[data-view="${activeViewId}"]`);
+    if (targetButton) { targetButton.classList.add('active'); }
+    else if (activeViewId === 'readerView') { // Special case for reader
+        const surahButton = bottomNav.querySelector('button[data-view="surahListView"]');
+        if (surahButton) surahButton.classList.add('active');
+    }
+}
+
+function updateHeaderTitle(title) { headerTitle.innerHTML = title; }
+
+function highlightCurrentAyah(ayahNumber) {
+     if (currentAyah === ayahNumber && readerContent.querySelector('.ayah.current')) { return; }
+     currentAyah = ayahNumber;
+     const container = currentMode === 'paginate' ? document.getElementById('pageContainer') : readerContent;
+     if (!container) return;
+     const previous = container.querySelector('.ayah.current'); if (previous) previous.classList.remove('current');
+     const current = container.querySelector(`.ayah[data-ayah="${ayahNumber}"]`); if (current) current.classList.add('current');
+}
+
+async function updateLastRead(surah, ayah, log = true) {
+    if (surah !== currentSurah || ayah !== currentAyah || log) {
+        currentSurah = surah; currentAyah = ayah;
+        const key = `S${String(surah).padStart(3, '0')}A${String(ayah).padStart(3, '0')}`;
+        try {
+            await saveData(PROGRESS_STORE, { key: 'lastRead', value: key });
+             if (log) { await logHistory('read', { surah: surah, ayah: ayah }); }
+        } catch (error) { console.error("Failed to save last read progress:", error); }
+    }
+}
+
+async function loadLastRead() {
+    try {
+        const lastRead = await getData(PROGRESS_STORE, 'lastRead');
+        if (lastRead && lastRead.value) {
+            const match = lastRead.value.match(/S(\d+)A(\d+)/);
+            if (match) {
+                const surah = parseInt(match[1], 10); const ayah = parseInt(match[2], 10);
+                console.log(`Found last read: Surah ${surah}, Ayah ${ayah}`);
+                await loadSurah(surah, ayah, true); return true;
+            }
+        }
+        console.log("No valid last read found in DB.");
+    } catch (error) { console.error("Error loading last read position:", error); }
+    return false;
+}
+
+// --- Core Feature Functions (Surah Loading, Search, Bookmarks, Notes etc.) ---
+async function loadSurah(surahNumber, targetAyah = 1, scroll = true) {
+    console.log(`Loading Surah ${surahNumber}, Ayah ${targetAyah}`);
+    // Update state before switching view
+    currentSurah = surahNumber; currentAyah = targetAyah; currentPage = 1;
+
+    switchView('readerView'); // Switch view first
+    const lang = document.body.getAttribute('data-ui-lang') || 'en';
+    const surahName = (lang === 'ur' ? surahNamesUrdu : surahNames)[surahNumber - 1];
+    updateHeaderTitle(`${localize('Surah')} ${surahName} (${surahNumber})`);
+    readerContent.innerHTML = `<p style="text-align:center;">${localize('Loading Ayahs...')}</p>`;
+
+    try {
+        const transaction = db.transaction(AYAHS_STORE, 'readonly');
+        const store = transaction.objectStore(AYAHS_STORE);
+        const index = store.index('surahIndex');
+        const request = index.getAll(IDBKeyRange.only(surahNumber));
+
+        request.onsuccess = async () => {
+            const ayahs = request.result.sort((a, b) => a.ayah - b.ayah);
+            console.log(`Fetched ${ayahs.length} ayahs for Surah ${surahNumber}`);
+            if (ayahs.length === 0) {
+                readerContent.innerHTML = `<p style="text-align:center;">${localize('No Ayahs found for this Surah.')}</p>`; return;
+            }
+            currentAyahElements = ayahs;
+
+             // --- Ensure applyReadingMode is available and call it ---
+             if (typeof applyReadingMode === 'function') {
+                 console.log("Calling applyReadingMode to render ayahs...");
+                 await applyReadingMode(); // Await rendering completion
+             } else {
+                 console.error("CRITICAL: applyReadingMode function is not defined!");
+                 readerContent.innerHTML = `<p style="text-align:center;">Error: Cannot render Ayahs (applyReadingMode not found).</p>`;
+                 return;
+             }
+             // --- End Check ---
+
+             // Scroll or paginate after rendering is awaited
+             if (currentMode === 'scroll' && scroll) {
+                 const targetElement = readerContent.querySelector(`[data-key="S${String(currentSurah).padStart(3, '0')}A${String(targetAyah).padStart(3, '0')}"]`);
+                 if (targetElement) {
+                     targetElement.scrollIntoView({ behavior: 'auto', block: 'start' }); // Use auto for instant jump
+                     highlightCurrentAyah(targetAyah); // Ensure highlighted
+                     updateLastRead(currentSurah, targetAyah, false);
+                 } else { readerContent.scrollTop = 0; }
+             } else if (currentMode === 'paginate') {
+                 goToPageForAyah(targetAyah); // Handles rendering, scrolling within page, highlight, updateLastRead
+             } else { // Initial load, just highlight
+                 highlightCurrentAyah(targetAyah);
+                 updateLastRead(currentSurah, targetAyah, false);
+             }
+
+            await logHistory('navigate', { type: 'surah', surah: surahNumber, ayah: targetAyah });
+        };
+        request.onerror = event => { console.error("Error fetching ayahs: ", event.target.error); readerContent.innerHTML = `<p style="text-align:center;">${localize('Error loading Ayahs')}: ${event.target.error?.message}</p>`; };
+    } catch (error) { console.error("Error accessing DB for Surah:", error); readerContent.innerHTML = `<p style="text-align:center;">${localize('Error accessing database.')}</p>`; }
+}
+
+function scrollToAyahInPage(ayahNumber) {
+     setTimeout(() => {
+         const targetElement = document.querySelector(`#pageContainer [data-ayah="${ayahNumber}"]`);
+         const pageContainer = document.getElementById('pageContainer');
+         if (targetElement && pageContainer) { pageContainer.scrollTop = targetElement.offsetTop - pageContainer.offsetTop - 10; }
+         else if (pageContainer) { pageContainer.scrollTop = 0; }
+     }, 50); // Shorter delay might be sufficient now
+}
+
+function goToPage(pageNumber) {
+    if (pageNumber >= 1 && pageNumber <= totalPages && pageNumber !== currentPage) {
+        currentPage = pageNumber;
+        applyReadingMode().then(() => { // Ensure rendering completes
+            const firstAyahOnPage = currentAyahElements[(currentPage - 1) * linesPerPage];
+            if(firstAyahOnPage) {
+                 currentAyah = firstAyahOnPage.ayah; // Update current ayah state
+                 updateLastRead(currentSurah, currentAyah);
+                 highlightCurrentAyah(currentAyah);
+                 document.getElementById('pageContainer')?.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    }
+}
+
+function goToPageForAyah(ayahNumber) {
+    const index = currentAyahElements.findIndex(a => a.ayah === ayahNumber);
+    if (index !== -1) {
+        const targetPage = Math.floor(index / linesPerPage) + 1;
+        const needsPageRender = targetPage !== currentPage;
+        currentPage = targetPage;
+         updateLastRead(currentSurah, ayahNumber); // Update progress regardless of page change
+        highlightCurrentAyah(ayahNumber); // Highlight immediately
+
+        if (needsPageRender) {
+            applyReadingMode().then(() => scrollToAyahInPage(ayahNumber)); // Render new page then scroll
+        } else {
+            scrollToAyahInPage(ayahNumber); // Already on page, just scroll
+        }
+    } else {
+        console.warn(`Ayah ${ayahNumber} not found in current Surah.`);
+        currentPage = 1; applyReadingMode(); // Go to first page
+    }
+}
+
+async function searchAyahs(query) {
+    searchResults.innerHTML = `<p>${localize('Searching...')}</p>`;
+    if (!query || query.trim().length < 2) { searchResults.innerHTML = `<p>${localize('Please enter at least 2 characters.')}</p>`; return; }
+    const normalizedQuery = normalizeArabic(query.toLowerCase()); const isArabicQuery = /[\u0600-\u06FF]/.test(query);
+    const results = []; let searchError = null;
+    try {
+        const store = getObjectStore(AYAHS_STORE, 'readonly');
+        const request = store.openCursor();
+        await new Promise((resolve, reject) => {
+            request.onsuccess = event => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const ayah = cursor.value; const arabicNorm = normalizeArabic(ayah.arabic); const urduLower = ayah.urdu.toLowerCase(); let match = false;
+                    if (isArabicQuery) { if (arabicNorm.includes(normalizedQuery) || ayah.arabic.includes(query)) match = true; }
+                    else { if (urduLower.includes(normalizedQuery) || arabicNorm.includes(normalizedQuery)) match = true; }
+                    if (match) { results.push(ayah); }
+                    cursor.continue();
+                } else { resolve(); } };
+            request.onerror = event => { searchError = event.target.error; console.error("Search cursor error:", searchError); reject(searchError); }; });
+        renderSearchResults(results, query);
+    } catch (error) { console.error("DB access error for search:", error || searchError); searchResults.innerHTML = `<p>${localize('Error during search:')} ${error?.message || searchError?.message}</p>`; }
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return text;
+    try { const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); const regex = new RegExp(`(${escapedQuery})`, 'gi'); return text.replace(regex, '<span class="highlight">$1</span>'); }
+    catch (e) { console.warn("Highlighting regex error:", e); return text; }
+}
+
+function renderSearchResults(results, query) {
+    if (results.length === 0) { searchResults.innerHTML = `<p>${localize('No results found.')}</p>`; return; }
+    searchResults.innerHTML = `<h3>${localize('Found')} ${results.length} ${localize('results:')}</h3>`;
+    const fragment = document.createDocumentFragment(); const normalizedQuery = normalizeArabic(query.toLowerCase()); const isArabicQuery = /[\u0600-\u06FF]/.test(query);
+    results.forEach(ayah => {
+        const div = document.createElement('div'); div.className = 'ayah search-result'; div.dataset.key = ayah.key; div.dataset.surah = ayah.surah; div.dataset.ayah = ayah.ayah;
+        let highlightedArabic = ayah.arabic; let highlightedUrdu = ayah.urdu;
+        if (isArabicQuery) { highlightedArabic = highlightText(ayah.arabic, query); } else { highlightedUrdu = highlightText(ayah.urdu, query); }
+        div.innerHTML = `<div class="ayahArabic">${highlightedArabic}</div><div class="ayahTranslation">${highlightedUrdu}</div><div class="ayahMeta">Surah ${ayah.surah}, Ayah ${ayah.ayah}</div>`;
+        fragment.appendChild(div); });
+    searchResults.appendChild(fragment);
+}
+
+async function toggleBookmark(key, ayahElement, buttonElement) {
+    const isBookmarked = ayahElement.classList.contains('bookmarked');
+    try {
+        if (isBookmarked) {
+            await deleteData(BOOKMARKS_STORE, key); ayahElement.classList.remove('bookmarked'); buttonElement.textContent = localize('Bookmark'); buttonElement.setAttribute('aria-label', localize('Bookmark')); await logHistory('unbookmark', { key: key });
+        } else {
+            await saveData(BOOKMARKS_STORE, { key: key, bookmarked: true, timestamp: Date.now() }); ayahElement.classList.add('bookmarked'); buttonElement.textContent = localize('Unbookmark'); buttonElement.setAttribute('aria-label', localize('Unbookmark')); await logHistory('bookmark', { key: key });
+        }
+        if (currentView === 'bookmarksView') await loadBookmarks();
+    } catch (error) { console.error(`Failed to toggle bookmark for ${key}:`, error); alert(`Error ${isBookmarked ? 'removing' : 'adding'} bookmark.`); }
+}
+
+async function loadBookmarks() {
+    bookmarksList.innerHTML = `<p>${localize('Loading bookmarks...')}</p>`;
+    try {
+        const bookmarks = (await getAllData(BOOKMARKS_STORE)).sort((a,b) => a.key.localeCompare(b.key));
+        if (bookmarks.length === 0) { bookmarksList.innerHTML = `<p>${localize('No bookmarks yet.')}</p>`; return; }
+        const fragment = document.createDocumentFragment(); const ayahKeys = bookmarks.map(b => b.key); const ayahDetails = {};
+        const store = getObjectStore(AYAHS_STORE, 'readonly');
+        await Promise.all(ayahKeys.map(key => new Promise((resolve, reject) => {
+                const request = store.get(key); request.onsuccess = () => { if(request.result) ayahDetails[key] = request.result; resolve(); }; request.onerror = reject; }) ));
+        bookmarks.forEach(bookmark => {
+            const ayah = ayahDetails[bookmark.key]; if (!ayah) return;
+            const div = document.createElement('div'); div.className = 'ayah bookmark-item'; div.dataset.key = ayah.key; div.dataset.surah = ayah.surah; div.dataset.ayah = ayah.ayah;
+            div.innerHTML = `<div class="ayahArabic">${ayah.arabic}</div><div class="ayahTranslation">${ayah.urdu}</div><div class="ayahMeta">Surah ${ayah.surah}, Ayah ${ayah.ayah}</div><button class="removeBookmarkBtn" data-key="${ayah.key}">${localize('Remove')}</button>`;
+            fragment.appendChild(div); });
+        bookmarksList.innerHTML = ''; bookmarksList.appendChild(fragment);
+    } catch (error) { console.error("Error loading bookmarks:", error); bookmarksList.innerHTML = `<p>${localize('Error loading bookmarks:')} ${error.message}</p>`; }
+}
+
+async function openNoteModal(ayahData) {
+    try {
+        const note = await getData(NOTES_STORE, ayahData.key);
+        noteModalAyahRef.textContent = `Surah ${ayahData.surah}, Ayah ${ayahData.ayah}`;
+        noteModalAyahRef.dataset.key = ayahData.key; noteModalAyahRef.dataset.surah = ayahData.surah; noteModalAyahRef.dataset.ayah = ayahData.ayah;
+        noteModalTextarea.value = note ? note.note : ''; noteModal.classList.add('active'); noteModalTextarea.focus();
+    } catch (error) { console.error("Error fetching note to open modal:", error); alert("Error loading note data."); }
+}
+
+async function saveNote() {
+    const key = noteModalAyahRef.dataset.key; const noteText = noteModalTextarea.value.trim(); if (!key) { console.error("Cannot save note, key is missing."); closeModal('noteModal'); return; }
+    const readerAyahElement = readerContent.querySelector(`.ayah[data-key="${key}"]`); const noteDisplay = readerAyahElement?.querySelector('.ayahNoteInput');
+    try {
+        if (noteText) {
+            await saveData(NOTES_STORE, { key: key, note: noteText, timestamp: Date.now() });
+            if(readerAyahElement) readerAyahElement.classList.add('has-note'); if(noteDisplay) { noteDisplay.value = noteText; noteDisplay.style.display = 'block'; } await logHistory('save_note', { key: key });
+        } else {
+            await deleteData(NOTES_STORE, key);
+            if(readerAyahElement) readerAyahElement.classList.remove('has-note'); if(noteDisplay) { noteDisplay.value = ''; noteDisplay.style.display = 'none'; } await logHistory('delete_note', { key: key });
+        }
+        closeModal('noteModal'); if (currentView === 'notesView') await loadNotes();
+    } catch (error) { console.error(`Failed to save/delete note for ${key}:`, error); alert("Error saving note."); }
+}
+
+async function loadNotes() {
+    notesList.innerHTML = `<p>${localize('Loading notes...')}</p>`;
+    try {
+        const notes = (await getAllData(NOTES_STORE)).sort((a,b) => a.key.localeCompare(b.key));
+        if (notes.length === 0) { notesList.innerHTML = `<p>${localize('No notes yet.')}</p>`; return; }
+        const fragment = document.createDocumentFragment(); const ayahKeys = notes.map(n => n.key); const ayahDetails = {}; const noteMap = new Map(notes.map(n => [n.key, n.note]));
+        const store = getObjectStore(AYAHS_STORE, 'readonly');
+        await Promise.all(ayahKeys.map(key => new Promise((resolve, reject) => {
+                 const request = store.get(key); request.onsuccess = () => { if(request.result) ayahDetails[key] = request.result; resolve(); }; request.onerror = reject; }) ));
+        notes.forEach(noteEntry => {
+             const ayah = ayahDetails[noteEntry.key]; if (!ayah) return;
+             const noteText = noteMap.get(ayah.key) || ''; const div = document.createElement('div'); div.className = 'ayah note-item'; div.dataset.key = ayah.key; div.dataset.surah = ayah.surah; div.dataset.ayah = ayah.ayah;
+             div.innerHTML = `<div class="ayahMeta">Surah ${ayah.surah}, Ayah ${ayah.ayah}</div><p class="note-text" style="white-space: pre-wrap; word-wrap: break-word;">${noteText.length > 150 ? noteText.substring(0, 150) + '...' : noteText}</p><button class="editNoteBtn" data-key="${ayah.key}">${localize('Edit')}</button><button class="deleteNoteBtn" data-key="${ayah.key}">${localize('Delete')}</button>`;
+             fragment.appendChild(div); });
+        notesList.innerHTML = ''; notesList.appendChild(fragment);
+    } catch (error) { console.error("Error loading notes:", error); notesList.innerHTML = `<p>${localize('Error loading notes:')} ${error.message}</p>`; }
+}
+
+// --- Settings ---
+function applySettings() {
+    const theme = localStorage.getItem('setting_theme') || 'light';
+    const fontSize = localStorage.getItem('setting_fontSize') || 'medium';
+    const showTranslation = localStorage.getItem('setting_showTranslation') !== 'false';
+    const uiLang = localStorage.getItem('setting_uiLanguage') || 'en';
+    const readingMode = localStorage.getItem('setting_readingMode') || 'scroll';
+    linesPerPage = parseInt(localStorage.getItem('setting_linesPerPage') || '10', 10);
+    document.body.setAttribute('data-theme', theme); document.body.setAttribute('data-font-size', fontSize); document.body.setAttribute('data-show-translation', String(showTranslation)); document.body.setAttribute('data-ui-lang', uiLang);
+    themeSelect.value = theme; fontSizeSelect.value = fontSize; showTranslationToggle.checked = showTranslation; uiLanguageSelect.value = uiLang; readingModeSelect.value = readingMode; linesPerPageSlider.value = linesPerPage; linesPerPageValue.textContent = linesPerPage;
+    currentMode = readingMode; applyReadingModeUIChanges(); localizeUI();
+}
+
+function saveSetting(key, value) {
+    localStorage.setItem(`setting_${key}`, value); logHistory('settings_change', {key: key, value: value});
+    if (key === 'theme') document.body.setAttribute('data-theme', value);
+    if (key === 'fontSize') document.body.setAttribute('data-font-size', value);
+    if (key === 'showTranslation') document.body.setAttribute('data-show-translation', String(value));
+    if (key === 'uiLanguage') { document.body.setAttribute('data-ui-lang', value); localizeUI(); }
+    if (key === 'readingMode') { currentMode = value; applyReadingModeUIChanges(); if (currentView === 'readerView' && currentAyahElements.length > 0) { applyReadingMode(); } }
+    if (key === 'linesPerPage') { linesPerPage = parseInt(value, 10); linesPerPageValue.textContent = linesPerPage; if (currentMode === 'paginate' && currentView === 'readerView' && currentAyahElements.length > 0) { applyReadingMode(); } }
+}
+
+function setupSettingsListeners() {
+    themeSelect.onchange = () => saveSetting('theme', themeSelect.value);
+    fontSizeSelect.onchange = () => saveSetting('fontSize', fontSizeSelect.value);
+    showTranslationToggle.onchange = () => saveSetting('showTranslation', showTranslationToggle.checked);
+    uiLanguageSelect.onchange = () => saveSetting('uiLanguage', uiLanguageSelect.value);
+    readingModeSelect.onchange = () => saveSetting('readingMode', readingModeSelect.value);
+    linesPerPageSlider.oninput = () => { linesPerPageValue.textContent = linesPerPageSlider.value; };
+    linesPerPageSlider.onchange = () => { saveSetting('linesPerPage', linesPerPageSlider.value); };
+}
+
+// --- Gestures & Fullscreen ---
+function handleGesture() {
+    if (currentView !== 'readerView' || document.body.classList.contains('fullscreen-active')) return;
+    const threshold = 50;
+    if (touchEndX < touchStartX - threshold) { // Swipe Left (Next)
+        if (currentMode === 'paginate' && currentPage < totalPages) { goToPage(currentPage + 1); }
+        else if (currentMode === 'scroll') {
+             let nextAyahNum = (currentAyah || 0) + 1; const el = readerContent.querySelector(`.ayah[data-ayah="${nextAyahNum}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    } else if (touchEndX > touchStartX + threshold) { // Swipe Right (Prev)
+        if (currentMode === 'paginate' && currentPage > 1) { goToPage(currentPage - 1); }
+        else if (currentMode === 'scroll') {
+             let prevAyahNum = (currentAyah || 1) - 1; const el = readerContent.querySelector(`.ayah[data-ayah="${prevAyahNum}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+}
+
+function enterFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+             console.warn(`Fullscreen API failed: ${err.message}. Using CSS fallback.`); readerView.classList.add('fullscreen'); // Use class only if API fails
+        });
+    }
+     // Common UI changes regardless of method
+     document.body.classList.add('fullscreen-active'); appHeader.style.display = 'none'; bottomNav.style.display = 'none';
+     fullscreenBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`;
+     fullscreenBtn.onclick = exitFullscreen; fullscreenBtn.setAttribute('aria-label', 'Exit Fullscreen');
+}
+
+function exitFullscreen() {
+    if (document.fullscreenElement) { document.exitFullscreen().catch(err => console.error(`Error exiting fullscreen: ${err.message}`)); }
+    readerView.classList.remove('fullscreen'); // Remove class regardless
+    document.body.classList.remove('fullscreen-active'); appHeader.style.display = 'flex'; bottomNav.style.display = 'flex';
+    fullscreenBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
+    fullscreenBtn.onclick = enterFullscreen; fullscreenBtn.setAttribute('aria-label', 'Fullscreen');
+}
+
+// --- History, Stats, Reminders, Backup/Restore ---
+async function logHistory(eventType, details) { try { await saveData(HISTORY_STORE, { timestamp: Date.now(), eventType, details }); } catch (error) { console.error("Error logging history:", error); } }
+
+async function loadHistory() {
+    historyList.innerHTML = `<p>${localize('Loading history...')}</p>`;
+    try {
+        const history = (await getAllData(HISTORY_STORE)).sort((a, b) => b.timestamp - a.timestamp);
+        if (history.length === 0) { historyList.innerHTML = `<p>${localize('No reading history recorded yet.')}</p>`; return; }
+        const fragment = document.createDocumentFragment();
+        history.slice(0, 200).forEach(entry => { /* ... (render history item logic - same as before) ... */
+            const div = document.createElement('div'); div.className = 'history-item'; const date = new Date(entry.timestamp).toLocaleString(); let text = `${date}: ${localize(entry.eventType)}`; if (!text.includes(':')) text = `${date}: ${entry.eventType}`;
+            if (entry.details) {
+                 if (entry.eventType === 'navigate' || entry.eventType === 'read') { text += ` - Surah ${entry.details.surah}, Ayah ${entry.details.ayah}`; }
+                 else if (['bookmark', 'unbookmark', 'save_note', 'delete_note'].includes(entry.eventType)) { text += ` - Item ${entry.details.key}`; }
+                 else if (entry.eventType === 'search' && entry.details.query) { text += ` - Query: "${entry.details.query.substring(0,50)}${entry.details.query.length > 50 ? '...' : ''}"`; }
+                 else if (entry.eventType === 'session_start') { text = `${date}: ${localize('App Opened')}`; }
+                 else if (entry.eventType === 'session_end' && typeof entry.details.duration === 'number') { const duration = Math.round(entry.details.duration / 1000 / 60); text = `${date}: ${localize('App Closed')} (${localize('Session')}: ${duration} min)`; }
+                 else if (entry.eventType === 'settings_change') { text += ` - ${entry.details.key}=${entry.details.value}`; }
+            }
+            div.textContent = text; fragment.appendChild(div);
+         });
+        historyList.innerHTML = ''; historyList.appendChild(fragment);
+        if (history.length > 200) { const notice = document.createElement('p'); notice.textContent = localize('Displaying last 200 history entries.'); historyList.appendChild(notice); }
+    } catch (error) { console.error("Error loading history:", error); historyList.innerHTML = `<p>${localize('Error loading history:')} ${error.message}</p>`; }
+}
+
+async function clearHistory() { if (confirm(localize('Are you sure you want to clear all reading history? This cannot be undone.'))) { try { await clearStore(HISTORY_STORE); await loadHistory(); await displayStats(); } catch (error) { console.error("Error clearing history:", error); alert(localize('Failed to clear history.')); } } }
+
+async function calculateStats() { /* ... (stats calculation - same as before) ... */
+     let stats = { today: { readCount: 0, sessionTime: 0 }, month: { readCount: 0, sessionTime: 0 }, year: { readCount: 0, sessionTime: 0 }, total: { readCount: 0, sessionTime: 0 } };
+    try {
+        const history = await getAllData(HISTORY_STORE); const now = new Date(); const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime(); const thisYearStart = new Date(now.getFullYear(), 0, 1).getTime();
+        let uniqueReadToday = new Set(); let uniqueReadMonth = new Set(); let uniqueReadYear = new Set(); let uniqueReadTotal = new Set();
+        history.forEach(entry => {
+            if (entry.eventType === 'session_end' && entry.details?.duration) { const duration = Number(entry.details.duration) || 0; stats.total.sessionTime += duration; if (entry.timestamp >= todayStart) stats.today.sessionTime += duration; if (entry.timestamp >= thisMonthStart) stats.month.sessionTime += duration; if (entry.timestamp >= thisYearStart) stats.year.sessionTime += duration; }
+            if (entry.eventType === 'read' && entry.details?.surah && entry.details?.ayah) { const ayahKey = `S${entry.details.surah}A${entry.details.ayah}`; if (!uniqueReadTotal.has(ayahKey)) uniqueReadTotal.add(ayahKey); if (entry.timestamp >= todayStart && !uniqueReadToday.has(ayahKey)) uniqueReadToday.add(ayahKey); if (entry.timestamp >= thisMonthStart && !uniqueReadMonth.has(ayahKey)) uniqueReadMonth.add(ayahKey); if (entry.timestamp >= thisYearStart && !uniqueReadYear.has(ayahKey)) uniqueReadYear.add(ayahKey); } });
+        stats.today.readCount = uniqueReadToday.size; stats.month.readCount = uniqueReadMonth.size; stats.year.readCount = uniqueReadYear.size; stats.total.readCount = uniqueReadTotal.size;
+        stats.today.sessionTime = Math.round(stats.today.sessionTime / 60000); stats.month.sessionTime = Math.round(stats.month.sessionTime / 60000); stats.year.sessionTime = Math.round(stats.year.sessionTime / 60000); stats.total.sessionTime = Math.round(stats.total.sessionTime / 60000);
+    } catch (error) { console.error("Error calculating stats from history:", error); } return stats;
+}
+
+async function displayStats() { /* ... (display stats - same as before) ... */
+     statsToday.textContent = localize("Calculating..."); statsMonth.textContent = ""; statsYear.textContent = ""; statsTotal.textContent = "";
+     try {
+        const stats = await calculateStats();
+        statsToday.textContent = `${localize('Ayahs Read')}: ${stats.today.readCount}, ${localize('Time Spent')}: ${stats.today.sessionTime} min`; statsMonth.textContent = `${localize('Ayahs Read')}: ${stats.month.readCount}, ${localize('Time Spent')}: ${stats.month.sessionTime} min`; statsYear.textContent = `${localize('Ayahs Read')}: ${stats.year.readCount}, ${localize('Time Spent')}: ${stats.year.sessionTime} min`; statsTotal.textContent = `${localize('Ayahs Read')}: ${stats.total.readCount}, ${localize('Time Spent')}: ${stats.total.sessionTime} min`;
+    } catch (error) { console.error("Error displaying stats:", error); statsToday.textContent = localize("Error loading stats."); }
+}
+
+function showNotification(title, body) { /* ... (show notification - same as before) ... */
+    if (!('Notification' in window)) { alert(`${title}\n${body}`); return; }
+    if (Notification.permission === 'granted') { new Notification(title, { body: body }); }
+    else if (Notification.permission !== 'denied') { Notification.requestPermission().then(permission => { if (permission === 'granted') { new Notification(title, { body: body }); } else { alert(`${title}\n${body}`); } }); }
+    else { alert(`${title}\n${body}`); }
+}
+
+async function addReminder() { /* ... (add reminder - same as before) ... */
+    const timeStr = reminderTimeInput.value; const text = reminderTextInput.value.trim(); if (!timeStr) { alert(localize('Please select a time for the reminder.')); return; } const time = new Date(timeStr).getTime(); if (isNaN(time) || time <= Date.now()) { alert(localize('Please select a valid future time.')); return; }
+    const reminder = { time: time, text: text || `${localize('Quran reading reminder at')} ${new Date(time).toLocaleTimeString()}`, triggered: false };
+    try { await saveData(REMINDERS_STORE, reminder); reminderTimeInput.value = ''; reminderTextInput.value = ''; await loadReminders(); } catch (error) { console.error("Error adding reminder:", error); alert(localize('Failed to save reminder.')); }
+}
+
+async function loadReminders() { /* ... (load reminders - same as before, ensure delete button has class deleteReminderBtn) ... */
+    remindersList.innerHTML = `<p>${localize('Loading reminders...')}</p>`;
+    try {
+        const allReminders = await getAllData(REMINDERS_STORE); activeReminders = allReminders.filter(r => r.time > Date.now()).sort((a, b) => a.time - b.time);
+        if (activeReminders.length === 0) { remindersList.innerHTML = `<p>${localize('No active reminders.')}</p>`; return; }
+        const fragment = document.createDocumentFragment();
+        activeReminders.forEach(reminder => { const div = document.createElement('div'); div.className = 'reminder-item'; div.innerHTML = `<span>${reminder.text} - ${new Date(reminder.time).toLocaleString()}</span><button class="deleteReminderBtn" data-id="${reminder.id}">${localize('Delete')}</button>`; fragment.appendChild(div); });
+        remindersList.innerHTML = ''; remindersList.appendChild(fragment);
+    } catch (error) { console.error("Error loading reminders:", error); remindersList.innerHTML = `<p>${localize('Error loading reminders:')} ${error.message}</p>`; }
+}
+
+function checkReminders() { /* ... (check reminders - same as before, ensure delete works) ... */
+    const now = Date.now();
+    activeReminders.forEach(async (reminder) => {
+        if (!reminder.triggered && reminder.time <= now) {
+             showNotification(reminder.text || localize('Quran Reading Reminder'), `${localize('Reminder set for')} ${new Date(reminder.time).toLocaleTimeString()}`);
+             reminder.triggered = true; // Prevent re-triggering in this session
+             try {
+                 await deleteData(REMINDERS_STORE, reminder.id);
+                 activeReminders = activeReminders.filter(r => r.id !== reminder.id); // Update local cache
+                 if (currentView === 'remindersView') { const item = remindersList.querySelector(`.reminder-item button[data-id="${reminder.id}"]`)?.closest('.reminder-item'); if(item) item.remove(); } // Remove from UI if visible
+             } catch (error) { console.error(`Failed to delete reminder ${reminder.id} after trigger:`, error); }
+        }
+    });
+}
+
+async function exportData() { /* ... (export data - same as before) ... */
+    console.log("Starting data export..."); try {
+        const [bookmarks, notes, progress, history, reminders] = await Promise.all([ getAllData(BOOKMARKS_STORE), getAllData(NOTES_STORE), getAllData(PROGRESS_STORE), getAllData(HISTORY_STORE), getAllData(REMINDERS_STORE) ]);
+        const settings = {}; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith('setting_')) { settings[key] = localStorage.getItem(key); } }
+        const dataToExport = { appName: "QuranAppPureJS", version: 1, timestamp: Date.now(), data: { bookmarks, notes, progress, settings, history, reminders } };
+        const jsonString = JSON.stringify(dataToExport, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, ''); a.download = `quran_app_backup_${dateStr}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); alert(localize('Data exported successfully!'));
+    } catch (error) { console.error("Export failed:", error); alert(`${localize('Export failed')}: ${error.message}`); }
+}
+
+async function importData() { /* ... (import data - same as before) ... */
+    if (!importFile.files || importFile.files.length === 0) { alert(localize('Please select a backup file to import.')); return; } const file = importFile.files[0]; if (!file.type.match(/application\/json/)) { alert(localize('Invalid file type. Please select a .json backup file.')); return; } if (!confirm(localize('Importing data will overwrite all current bookmarks, notes, progress, settings, and history. Are you sure you want to continue?'))) { return; }
+    console.log("Starting data import..."); appLoader.classList.remove('hidden'); appLoader.style.opacity = '1'; loadProgress.style.display = 'none'; loadStatus.textContent = localize('Importing data...');
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const importedData = JSON.parse(event.target.result); if (!importedData || importedData.appName !== "QuranAppPureJS" || !importedData.data) { throw new Error('Invalid or incompatible backup file format.'); } const data = importedData.data;
+            console.log("Clearing existing data..."); await Promise.all([ clearStore(BOOKMARKS_STORE), clearStore(NOTES_STORE), clearStore(PROGRESS_STORE), clearStore(HISTORY_STORE), clearStore(REMINDERS_STORE) ]);
+            Object.keys(localStorage).forEach(key => { if (key.startsWith('setting_')) { localStorage.removeItem(key); } }); console.log("Existing data cleared.");
+            console.log("Importing data into stores..."); const storesToImport = [ { name: BOOKMARKS_STORE, data: data.bookmarks || [] }, { name: NOTES_STORE, data: data.notes || [] }, { name: PROGRESS_STORE, data: data.progress || [] }, { name: HISTORY_STORE, data: data.history || [] }, { name: REMINDERS_STORE, data: data.reminders || [] } ];
+            for (const storeInfo of storesToImport) { const transaction = db.transaction(storeInfo.name, 'readwrite'); const store = transaction.objectStore(storeInfo.name); let importCount = 0; for (const item of storeInfo.data) { if ((storeInfo.name === HISTORY_STORE || storeInfo.name === REMINDERS_STORE) && item.id) { delete item.id; } store.put(item); importCount++; } await new Promise((resolve, reject) => { transaction.oncomplete = resolve; transaction.onerror = reject; }); console.log(`Imported ${importCount} items into ${storeInfo.name}`); }
+            console.log("Importing settings..."); if (data.settings) { for (const key in data.settings) { if (key.startsWith('setting_') && typeof data.settings[key] === 'string') { localStorage.setItem(key, data.settings[key]); } } } console.log("Settings imported.");
+            loadStatus.textContent = localize('Import complete. Reloading...'); alert(localize('Data imported successfully! The app will now reload.')); setTimeout(() => location.reload(), 1500);
+        } catch (error) { console.error("Import process failed:", error); alert(`${localize('Import failed')}: ${error.message}`); appLoader.style.opacity = '0'; setTimeout(() => appLoader.classList.add('hidden'), 500); } finally { importFile.value = ''; } };
+    reader.onerror = () => { alert(localize('Failed to read the backup file.')); importFile.value = ''; appLoader.style.opacity = '0'; setTimeout(() => appLoader.classList.add('hidden'), 500); }; reader.readAsText(file);
+}
+
+// --- Event Listeners Setup ---
+const debouncedScrollHandler = debounce(() => { /* ... (scroll handler - same as before) ... */
+    if (currentMode !== 'scroll' || currentView !== 'readerView') return; const readerRect = readerContent.getBoundingClientRect(); const ayahs = readerContent.querySelectorAll('.ayah'); let topVisibleAyahElement = null; let minTop = Infinity;
+    for (const ayah of ayahs) { const ayahRect = ayah.getBoundingClientRect(); if (ayahRect.top >= readerRect.top && ayahRect.top < readerRect.bottom) { if (ayahRect.top < minTop) { minTop = ayahRect.top; topVisibleAyahElement = ayah; } } if (ayahRect.top > readerRect.bottom + 200) break; }
+    if (topVisibleAyahElement) { const ayahNum = parseInt(topVisibleAyahElement.dataset.ayah, 10); if (!isNaN(ayahNum) && ayahNum !== currentAyah) { highlightCurrentAyah(ayahNum); updateLastRead(currentSurah, ayahNum); } }
+}, 250);
+
+function setupEventListeners() {
+     surahListView.addEventListener('click', (event) => { /* ... Surah list delegation ... */
+         const targetItem = event.target.closest('.surah-list-item'); if (targetItem && targetItem.dataset.surah) { const surahNum = parseInt(targetItem.dataset.surah, 10); if (!isNaN(surahNum)) { loadSurah(surahNum); } } });
+     readerContent.addEventListener('click', async (event) => { /* ... Reader content delegation ... */
+         const ayahElement = event.target.closest('.ayah'); if (!ayahElement) return; const key = ayahElement.dataset.key; const surah = parseInt(ayahElement.dataset.surah, 10); const ayah = parseInt(ayahElement.dataset.ayah, 10);
+         if (event.target.classList.contains('bookmarkBtn')) { event.stopPropagation(); await toggleBookmark(key, ayahElement, event.target); }
+         else if (event.target.classList.contains('noteBtn')) { event.stopPropagation(); const ayahData = { key, surah, ayah }; openNoteModal(ayahData); }
+         else { if (!isNaN(ayah)) { highlightCurrentAyah(ayah); updateLastRead(surah, ayah); } } });
+     bookmarksList.addEventListener('click', async (event) => { /* ... Bookmarks list delegation ... */
+        const item = event.target.closest('.bookmark-item'); if (!item) return; const key = item.dataset.key; const surah = parseInt(item.dataset.surah, 10); const ayah = parseInt(item.dataset.ayah, 10);
+        if (event.target.classList.contains('removeBookmarkBtn')) { event.stopPropagation(); try { await deleteData(BOOKMARKS_STORE, key); item.remove(); const readerAyah = readerContent.querySelector(`.ayah[data-key="${key}"]`); if (readerAyah) { readerAyah.classList.remove('bookmarked'); const btn = readerAyah.querySelector('.bookmarkBtn'); if (btn) { btn.textContent = localize('Bookmark'); btn.setAttribute('aria-label', localize('Bookmark'));} } await logHistory('unbookmark', { key: key }); } catch (error) { console.error(`Failed to remove bookmark ${key} from list:`, error); alert("Error removing bookmark."); } }
+        else if (!isNaN(surah) && !isNaN(ayah)) { loadSurah(surah, ayah); } });
+     notesList.addEventListener('click', async (event) => { /* ... Notes list delegation ... */
+         const item = event.target.closest('.note-item'); if (!item) return; const key = item.dataset.key; const surah = parseInt(item.dataset.surah, 10); const ayah = parseInt(item.dataset.ayah, 10); let ayahData = null; if (!isNaN(surah) && !isNaN(ayah)) { try { ayahData = await getData(AYAHS_STORE, key); } catch(e) {console.error("Failed to get ayah data for note action", e);} }
+         if (event.target.classList.contains('editNoteBtn')) { event.stopPropagation(); if (ayahData) openNoteModal(ayahData); }
+         else if (event.target.classList.contains('deleteNoteBtn')) { event.stopPropagation(); if (confirm(localize('Are you sure you want to delete this note?'))) { try { await deleteData(NOTES_STORE, key); item.remove(); const readerAyah = readerContent.querySelector(`.ayah[data-key="${key}"]`); if (readerAyah) { readerAyah.classList.remove('has-note'); const noteInput = readerAyah.querySelector('.ayahNoteInput'); if (noteInput) { noteInput.value = ''; noteInput.style.display = 'none'; } } await logHistory('delete_note', { key: key }); } catch (error) { console.error(`Failed to delete note ${key} from list:`, error); alert("Error deleting note."); } } }
+         else if (ayahData) { loadSurah(surah, ayah); } });
+     remindersList.addEventListener('click', async (event) => { /* ... Reminders list delegation ... */
+        if (event.target.classList.contains('deleteReminderBtn') && event.target.dataset.id) { const reminderId = parseInt(event.target.dataset.id, 10); if (!isNaN(reminderId) && confirm(localize('Delete this reminder?'))) { try { await deleteData(REMINDERS_STORE, reminderId); event.target.closest('.reminder-item')?.remove(); activeReminders = activeReminders.filter(r => r.id !== reminderId); } catch (error) { console.error(`Failed to delete reminder ${reminderId}:`, error); alert("Error deleting reminder."); } } } });
+     searchResults.addEventListener('click', (event) => { /* ... Search results delegation ... */
+        const item = event.target.closest('.search-result'); if (item && item.dataset.surah && item.dataset.ayah) { const surah = parseInt(item.dataset.surah, 10); const ayah = parseInt(item.dataset.ayah, 10); if (!isNaN(surah) && !isNaN(ayah)) { loadSurah(surah, ayah); } } });
+     bottomNav.addEventListener('click', (event) => { /* ... Bottom Nav ... */
+        const button = event.target.closest('button'); if (button && button.dataset.view) { switchView(button.dataset.view); } });
+     // Other Buttons
+     searchBtn.onclick = () => { const query = searchInput.value; searchAyahs(query); logHistory('search', { query: query }); };
+     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
+     prevPageBtn.onclick = () => goToPage(currentPage - 1); nextPageBtn.onclick = () => goToPage(currentPage + 1); saveNoteBtn.onclick = saveNote; clearHistoryBtn.onclick = clearHistory; addReminderBtn.onclick = addReminder; exportDataBtn.onclick = exportData; importDataBtn.onclick = importData; fullscreenBtn.onclick = enterFullscreen;
+     // Gestures & Scroll
+     readerContent.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+     readerContent.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleGesture(); });
+     readerContent.addEventListener('scroll', debouncedScrollHandler);
+     // Fullscreen change listener
+     document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && document.body.classList.contains('fullscreen-active')) {
+             // Exited fullscreen via ESC or F11, update UI state
+             exitFullscreen(); // Call our function to reset UI
+        }
+     });
+}
+
+// --- Initialization & Global Error Handling ---
+window.onerror = function(message, source, lineno, colno, error) { console.error("Unhandled error:", message, "at", source, `line ${lineno}:${colno}`, error); logHistory('error', { message: String(message), source: String(source), lineno: lineno, colno: colno, stack: error?.stack }); };
+window.onunhandledrejection = function(event) { console.error("Unhandled promise rejection:", event.reason); logHistory('error', { message: "Unhandled promise rejection: " + String(event.reason), stack: event.reason?.stack }); };
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM Loaded. Initializing Quran App...");
+    appLoader.classList.remove('hidden'); appLoader.style.opacity = '1'; loadProgress.value = 0; loadStatus.textContent = localize('Initializing...');
+    try {
+        await openDB();
+        applySettings(); // Apply stored settings first
+        setupSettingsListeners();
+        setupEventListeners(); // Setup ALL event listeners here
+
+        const isDataLoaded = localStorage.getItem('isDataLoaded');
+        console.log("Is data loaded flag:", isDataLoaded);
+        if (!isDataLoaded) {
+            console.log("Starting initial data load..."); await loadDataIntoDB(); console.log("Initial data load complete.");
+        } else {
+            console.log("Data already loaded."); appLoader.style.opacity = '0'; setTimeout(() => appLoader.classList.add('hidden'), 500);
+        }
+
+        renderSurahList(); // Render the list view content initially
+        const loadedLastRead = await loadLastRead(); // Try loading last read position
+        if (!loadedLastRead) {
+            console.log("No last read position, showing Surah list."); switchView('surahListView'); // Ensure list view is active if nothing else loaded
+        }
+
+        setInterval(checkReminders, 30 * 1000); await loadReminders();
+        sessionStartTime = Date.now(); await logHistory('session_start', {});
+        window.addEventListener('beforeunload', async () => { if (sessionStartTime) { const duration = Date.now() - sessionStartTime; await logHistory('session_end', { duration: duration }); if (currentSurah && currentAyah) { localStorage.setItem('lastReadPosSync', `S${String(currentSurah).padStart(3, '0')}A${String(currentAyah).padStart(3, '0')}`); } } });
+
+        console.log("Quran App Initialized Successfully.");
+        if (!appLoader.classList.contains('hidden')) { appLoader.style.opacity = '0'; setTimeout(() => appLoader.classList.add('hidden'), 500); }
+    } catch (error) {
+        console.error("CRITICAL INITIALIZATION FAILED:", error);
+        appLoader.classList.remove('hidden'); appLoader.style.opacity = '1'; loadProgress.style.display = 'none'; loadStatus.textContent = `${localize('Initialization Error')}: ${error.message}. ${localize('Please refresh or check console.')}`;
+    }
+});
+</script>
+</body>
+</html>

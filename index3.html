@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Search and Reader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/noto-nastaliq-urdu" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: 'Noto Nastaliq Urdu', serif; font-size: 19px; }
+        .arabic { font-family: 'Amiri', serif !important; font-size: 24px; }
+        .urdu { font-family: 'Noto Nastaliq Urdu', serif !important; font-size: 19px; }
+        .dark-mode { background: #1a202c; color: #e2e8f0; }
+        .dark-mode .bg-white { background: #2d3748; }
+        .ayah-card { transition: all 0.3s; }
+        button, select, input, textarea { transition: background 0.2s; }
+        select, input[type="number"], textarea { border: 1px solid #ccc; padding: 8px; border-radius: 4px; }
+        textarea { width: 100%; resize: vertical; }
+        .fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; }
+        .fixed-header { position: sticky; top: 0; z-index: 10; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center">
+    <header class="w-full bg-green-500 text-white p-4 text-center">
+        <h1 class="arabic text-3xl">قرآن سرچ اینڈ ریڈر</h1>
+    </header>
+    <main class="w-full max-w-4xl p-4">
+        <div id="auth" class="mb-4 hidden">
+            <input id="email" type="email" placeholder="ای میل" class="border p-2 rounded">
+            <input id="password" type="password" placeholder="پاس ورڈ" class="border p-2 rounded">
+            <button onclick="login()" class="bg-green-500 text-white p-2 rounded">لاگ ان</button>
+            <button onclick="register()" class="bg-yellow-500 text-white p-2 rounded">رجسٹر</button>
+            <button onclick="logout()" class="bg-red-500 text-white p-2 rounded hidden">لاگ آؤٹ</button>
+        </div>
+        <div id="admin-panel" class="mb-4 hidden">
+            <h2 class="text-xl">ایڈمن ڈیش بورڈ</h2>
+            <div id="user-list"></div>
+            <div id="analytics"></div>
+        </div>
+        <div class="mb-4 flex flex-col gap-2">
+            <div class="flex gap-2">
+                <input id="search" type="text" placeholder="تلاش کریں (مثال: کل/آج)" class="w-full border p-2 rounded">
+                <label><input id="diacritics" type="checkbox"> تشدیدات شامل کریں</label>
+                <button onclick="search()" class="bg-green-500 text-white p-2 rounded">تلاش</button>
+            </div>
+            <div class="flex gap-2">
+                <select id="surah-filter" onchange="filterQuran()">
+                    <option value="">سورہ منتخب کریں</option>
+                    ${Array.from({ length: 114 }, (_, i) => `<option value="${i + 1}">سورہ ${i + 1}</option>`).join('')}
+                </select>
+                <input id="ayah-filter" type="number" min="1" placeholder="آیت نمبر" class="w-32" oninput="filterQuran()">
+                <button onclick="filterQuran()" class="bg-yellow-500 text-white p-2 rounded">فلٹر کریں</button>
+                <button onclick="showWholeQuran()" class="bg-blue-500 text-white p-2 rounded">مکمل قرآن</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleDarkMode()" class="bg-gray-500 text-white p-2 rounded">ڈارک موڈ</button>
+                <button onclick="exportPDF()" class="bg-blue-500 text-white p-2 rounded">PDF ایکسپورٹ</button>
+            </div>
+        </div>
+        <div id="bookmarks" class="mb-4 hidden">
+            <h2 class="text-xl">بک مارکس</h2>
+            <div id="bookmark-list"></div>
+        </div>
+        <div id="results" class="space-y-4"></div>
+        <div id="pagination" class="text-center"></div>
+    </main>
+
+    <script>
+        let ayahs = [], db, user = null, isDarkMode = false, currentPage = 0, results = [], readingMode = false, tempPage = -1;
+        const AYAH_PER_PAGE = 20, SEARCH_PER_PAGE = 10;
+
+        // Fetch and Cache Data
+        function fetchData() {
+            const cached = localStorage.getItem('quran_ayahs');
+            if (cached) {
+                ayahs = JSON.parse(cached);
+                if (ayahs.length > 0) {
+                    initDB();
+                    return;
+                }
+            }
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', './data/data.AM', true); // Update path/URL as needed
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const lines = xhr.responseText.trim().split('\n');
+                    ayahs = lines.map(line => {
+                        const match = line.match(/(.*?)\s*ترجمہ:\s*(.*?)<br\/>س\s*(\d+)\s*آ\s*(\d+)/);
+                        if (match) {
+                            return {
+                                id: `${match[3]}-${match[4]}`,
+                                surah_number: parseInt(match[3]),
+                                ayah_number: parseInt(match[4]),
+                                arabic_text: match[1],
+                                urdu_translation: match[2]
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                    localStorage.setItem('quran_ayahs', JSON.stringify(ayahs));
+                    initDB();
+                } else {
+                    alert('ڈیٹا لوڈ نہیں ہو سکا');
+                    showRandomAyahs();
+                }
+            };
+            xhr.send();
+        }
+
+        // IndexedDB Setup (for users, bookmarks, notes, searches)
+        function initDB() {
+            const request = indexedDB.open('QuranDB', 2);
+            request.onupgradeneeded = () => {
+                db = request.result;
+                db.createObjectStore('users', { keyPath: 'email' });
+                db.createObjectStore('bookmarks', { autoIncrement: true });
+                db.createObjectStore('searches', { autoIncrement: true });
+                db.createObjectStore('notes', { autoIncrement: true });
+            };
+            request.onsuccess = () => {
+                db = request.result;
+                showRandomAyahs();
+            };
+        }
+
+        // Authentication
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const tx = db.transaction(['users']);
+            tx.objectStore('users').get(email).onsuccess = (e) => {
+                const record = e.target.result;
+                if (record && record.password === password) {
+                    user = record;
+                    updateUI();
+                } else {
+                    alert('غلط ای میل یا پاس ورڈ');
+                }
+            };
+        }
+
+        function register() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const role = email.includes('admin') ? 'admin' : 'user';
+            const tx = db.transaction(['users'], 'readwrite');
+            tx.objectStore('users').put({ email, password, role, last_reading_page: 0 }).onsuccess = () => {
+                user = { email, role, last_reading_page: 0 };
+                updateUI();
+            };
+        }
+
+        function logout() {
+            user = null;
+            updateUI();
+        }
+
+        // UI Updates
+        function updateUI() {
+            document.getElementById('auth').classList.toggle('hidden', !!user);
+            document.getElementById('admin-panel').classList.toggle('hidden', !user || user.role !== 'admin');
+            document.getElementById('bookmarks').classList.toggle('hidden', !user);
+            document.querySelector('#auth button:last-child').classList.toggle('hidden', !user);
+            if (user && user.role === 'admin') loadAdminPanel();
+            if (user) loadBookmarks();
+            if (!readingMode) showRandomAyahs();
+        }
+
+        // Search
+        function search() {
+            let query = document.getElementById('search').value;
+            const diacritics = document.getElementById('diacritics').checked;
+            query = query.replace(/(\S+)\/(\S+)/g, '$1||$2')
+                .replace(/[ًٌٍََُِِّْٓ]/g, diacritics ? '' : '.?');
+            const regex = new RegExp(query, 'i');
+            results = ayahs.filter(ayah => regex.test(ayah.arabic_text) || regex.test(ayah.urdu_translation));
+            currentPage = 0;
+            readingMode = false;
+            displayResults();
+            logSearch(query);
+        }
+
+        // Whole Quran
+        function showWholeQuran() {
+            const lastPage = user ? user.last_reading_page : parseInt(sessionStorage.getItem('last_reading_page') || '0');
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <!DOCTYPE html>
+                <html lang="ur" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>مکمل قرآن</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+                    <link href="https://fonts.cdnfonts.com/css/noto-nastaliq-urdu" rel="stylesheet">
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <style>
+                        body { font-family: 'Noto Nastaliq Urdu', serif; font-size: 19px; background: #f7fafc; }
+                        .arabic { font-family: 'Amiri', serif !important; font-size: 24px; }
+                        .urdu { font-family: 'Noto Nastaliq Urdu', serif !important; font-size: 19px; }
+                        .ayah-card { transition: all 0.3s; }
+                        button, select, input, textarea { transition: background 0.2s; }
+                        select, input[type="number"], textarea { border: 1px solid #ccc; padding: 8px; border-radius: 4px; }
+                        textarea { width: 100%; resize: vertical; }
+                        .fixed-header { position: sticky; top: 0; z-index: 10; background: #09ef09; }
+                    </style>
+                </head>
+                <body class="min-h-screen flex flex-col items-center">
+                    <header class="w-full fixed-header text-white p-4 text-center">
+                        <h1 class="arabic text-3xl">مکمل قرآن</h1>
+                        <div class="flex gap-2 justify-center mt-2">
+                            <select id="surah-filter" onchange="filterQuran()">
+                                <option value="">سورہ منتخب کریں</option>
+                                ${Array.from({ length: 114 }, (_, i) => `<option value="${i + 1}">سورہ ${i + 1}</option>`).join('')}
+                            </select>
+                            <input id="ayah-filter" type="number" min="1" placeholder="آیت نمبر" class="w-32" oninput="filterQuran()">
+                            <button onclick="filterQuran()" class="bg-yellow-500 text-white p-2 rounded">فلٹر کریں</button>
+                        </div>
+                    </header>
+                    <main class="w-full max-w-4xl p-4 mt-24">
+                        <div id="results" class="space-y-4"></div>
+                        <div id="pagination" class="text-center"></div>
+                    </main>
+                    <script>
+                        let results = window.opener.ayahs, currentPage = ${lastPage}, AYAH_PER_PAGE = 20;
+                        const db = window.opener.db, user = window.opener.user;
+
+                        function filterQuran() {
+                            const surah = parseInt(document.getElementById('surah-filter').value) || 0;
+                            const ayah = parseInt(document.getElementById('ayah-filter').value) || 0;
+                            results = window.opener.ayahs.filter(ayah => 
+                                (surah === 0 || ayah.surah_number === surah) && 
+                                (ayah === 0 || ayah.ayah_number === ayah)
+                            );
+                            currentPage = 0;
+                            displayResults();
+                        }
+
+                        function displayResults() {
+                            const start = currentPage * AYAH_PER_PAGE;
+                            const end = start + AYAH_PER_PAGE;
+                            const html = results.slice(start, end).map(ayah => {
+                                const note = getNote(ayah.surah_number, ayah.ayah_number);
+                                return '<div class="ayah-card bg-white p-4 rounded-lg shadow-lg">' +
+                                    '<span class="arabic">' + ayah.arabic_text + '</span><br>' +
+                                    '<span class="urdu">' + ayah.urdu_translation + '</span><br>' +
+                                    '<span>س ' + ayah.surah_number + ' آ ' + ayah.ayah_number + '</span>' +
+                                    '<div class="flex gap-2 mt-2">' +
+                                    '<button onclick="navigateAyah(' + ayah.surah_number + ',' + ayah.ayah_number + ',-1)" class="bg-green-500 text-white p-1 rounded">«</button>' +
+                                    '<button onclick="navigateAyah(' + ayah.surah_number + ',' + ayah.ayah_number + ',1)" class="bg-green-500 text-white p-1 rounded">»</button>' +
+                                    (user ? '<button onclick="toggleBookmark(' + ayah.surah_number + ',' + ayah.ayah_number + ')" class="bg-blue-500 text-white p-1 rounded">🔖</button>' : '') +
+                                    (user ? '<button onclick="playAudio(' + ayah.surah_number + ',' + ayah.ayah_number + ')" class="bg-purple-500 text-white p-1 rounded">🎵</button>' : '') +
+                                    '</div>' +
+                                    (user ? '<textarea placeholder="نوٹس شامل کریں" onblur="saveNote(' + ayah.surah_number + ',' + ayah.ayah_number + ',this.value)">' + (note || '') + '</textarea>' : '') +
+                                    '</div>';
+                            }).join('');
+                            document.getElementById('results').innerHTML = html || '<p class="text-center">کوئی نتیجہ نہیں ملا</p>';
+                            document.getElementById('pagination').innerHTML = 
+                                '<button onclick="changePage(-1)" ' + (currentPage === 0 ? 'disabled' : '') + ' class="bg-green-500 text-white p-2 rounded">پچھلا</button>' +
+                                '<span>صفحہ ' + (currentPage + 1) + '</span>' +
+                                '<button onclick="changePage(1)" ' + (end >= results.length ? 'disabled' : '') + ' class="bg-green-500 text-white p-2 rounded">اگلا</button>';
+                            saveReadingPosition(currentPage);
+                        }
+
+                        function navigateAyah(surah, ayah, delta) {
+                            const index = surah * 1000 + ayah + delta;
+                            const target = window.opener.ayahs.find(a => a.id === \`\${Math.floor(index / 1000)}-\${index % 1000}\`);
+                            if (target) {
+                                results = [target];
+                                currentPage = 0;
+                                displayResults();
+                            }
+                        }
+
+                        function toggleBookmark(surah, ayah) {
+                            const tx = db.transaction(['bookmarks'], 'readwrite');
+                            const store = tx.objectStore('bookmarks');
+                            store.openCursor().onsuccess = (e) => {
+                                const cursor = e.target.result;
+                                if (cursor && cursor.value.user_id === user.email && cursor.value.surah_number === surah && cursor.value.ayah_number === ayah) {
+                                    cursor.delete();
+                                    return;
+                                }
+                                if (cursor) cursor.continue();
+                                else {
+                                    store.add({ user_id: user.email, surah_number: surah, ayah_number: ayah });
+                                }
+                            };
+                        }
+
+                        function playAudio(surah, ayah) {
+                            const audio = new Audio('https://cdn.alquran.cloud/media/audio/ayah/ar.alafasy/' + surah + '/' + ayah);
+                            audio.play().catch(() => alert('آڈیو لوڈ نہیں ہو سکا'));
+                        }
+
+                        function saveNote(surah, ayah, text) {
+                            const tx = db.transaction(['notes'], 'readwrite');
+                            const store = tx.objectStore('notes');
+                            store.openCursor().onsuccess = (e) => {
+                                const cursor = e.target.result;
+                                if (cursor && cursor.value.user_id === user.email && cursor.value.surah_number === surah && cursor.value.ayah_number === ayah) {
+                                    if (text) cursor.update({ user_id: user.email, surah_number: surah, ayah_number: ayah, text });
+                                    else cursor.delete();
+                                    return;
+                                }
+                                if (cursor) cursor.continue();
+                                else if (text) {
+                                    store.add({ user_id: user.email, surah_number: surah, ayah_number: ayah, text });
+                                }
+                            };
+                        }
+
+                        function getNote(surah, ayah) {
+                            let note = '';
+                            const tx = db.transaction(['notes']);
+                            tx.objectStore('notes').openCursor().onsuccess = (e) => {
+                                const cursor = e.target.result;
+                                if (cursor && cursor.value.user_id === user.email && cursor.value.surah_number === surah && cursor.value.ayah_number === ayah) {
+                                    note = cursor.value.text;
+                                }
+                                if (cursor) cursor.continue();
+                            };
+                            return note;
+                        }
+
+                        function saveReadingPosition(page) {
+                            if (user) {
+                                user.last_reading_page = page;
+                                db.transaction(['users'], 'readwrite').objectStore('users').put(user);
+                            } else {
+                                sessionStorage.setItem('last_reading_page', page);
+                            }
+                        }
+
+                        function changePage(delta) {
+                            currentPage += delta;
+                            displayResults();
+                        }
+
+                        // Initialize
+                        displayResults();
+                    </script>
+                </body>
+                </html>
+            `);
+            win.document.close();
+        }
+
+        // Filter Quran
+        function filterQuran() {
+            const surah = parseInt(document.getElementById('surah-filter').value) || 0;
+            const ayah = parseInt(document.getElementById('ayah-filter').value) || 0;
+            results = ayahs.filter(ayah => 
+                (surah === 0 || ayah.surah_number === surah) && 
+                (ayah === 0 || ayah.ayah_number === ayah)
+            );
+            currentPage = 0;
+            readingMode = false;
+            displayResults();
+        }
+
+        // Display Results
+        function displayResults() {
+            const start = currentPage * (readingMode ? AYAH_PER_PAGE : SEARCH_PER_PAGE);
+            const end = start + (readingMode ? AYAH_PER_PAGE : SEARCH_PER_PAGE);
+            const html = results.slice(start, end).map(ayah => `
+                <div class="ayah-card bg-white p-4 rounded-lg shadow-lg">
+                    <span class="arabic">${ayah.arabic_text}</span><br>
+                    <span class="urdu">${ayah.urdu_translation}</span><br>
+                    <span>س ${ayah.surah_number} آ ${ayah.ayah_number}</span>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="navigateAyah(${ayah.surah_number}, ${ayah.ayah_number}, -1)" class="bg-green-500 text-white p-1 rounded">«</button>
+                        <button onclick="navigateAyah(${ayah.surah_number}, ${ayah.ayah_number}, 1)" class="bg-green-500 text-white p-1 rounded">»</button>
+                        <button onclick="readFromHere(${ayah.surah_number}, ${ayah.ayah_number})" class="bg-yellow-500 text-white p-1 rounded">📖</button>
+                        ${user ? `<button onclick="toggleBookmark(${ayah.surah_number}, ${ayah.ayah_number})" class="bg-blue-500 text-white p-1 rounded">🔖</button>` : ''}
+                        ${user ? `<button onclick="playAudio(${ayah.surah_number}, ${ayah.ayah_number})" class="bg-purple-500 text-white p-1 rounded">🎵</button>` : ''}
+                    </div>
+                    ${user ? `<textarea placeholder="نوٹس شامل کریں" onblur="saveNote(${ayah.surah_number}, ${ayah.ayah_number}, this.value)">${getNote(ayah.surah_number, ayah.ayah_number) || ''}</textarea>` : ''}
+                </div>
+            `).join('');
+            document.getElementById('results').innerHTML = html || '<p class="text-center">کوئی نتیجہ نہیں ملا</p>';
+            document.getElementById('pagination').innerHTML = `
+                <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''} class="bg-green-500 text-white p-2 rounded">پچھلا</button>
+                <span>صفحہ ${currentPage + 1}</span>
+                <button onclick="changePage(1)" ${end >= results.length ? 'disabled' : ''} class="bg-green-500 text-white p-2 rounded">اگلا</button>
+            `;
+        }
+
+        // Navigation
+        function navigateAyah(surah, ayah, delta) {
+            const index = surah * 1000 + ayah + delta;
+            const target = ayahs.find(a => a.id === `${Math.floor(index / 1000)}-${index % 1000}`);
+            if (target) {
+                results = [target];
+                currentPage = 0;
+                readingMode = false;
+                displayResults();
+            }
+        }
+
+        function readFromHere(surah, ayah) {
+            tempPage = Math.floor((surah * 1000 + ayah - 1) / AYAH_PER_PAGE);
+            readingMode = true;
+            displayReadingMode();
+        }
+
+        // Reading Mode
+        function displayReadingMode() {
+            const page = tempPage >= 0 ? tempPage : (user?.last_reading_page || parseInt(sessionStorage.getItem('last_reading_page') || '0'));
+            const start = page * AYAH_PER_PAGE;
+            const end = start + AYAH_PER_PAGE;
+            results = ayahs.filter(ayah => {
+                const index = ayah.surah_number * 1000 + ayah.ayah_number;
+                return index >= start && index < end;
+            });
+            results.sort((a, b) => (a.surah_number * 1000 + a.ayah_number) - (b.surah_number * 1000 + b.ayah_number));
+            displayResults();
+            if (tempPage < 0) {
+                if (user) {
+                    user.last_reading_page = page;
+                    db.transaction(['users'], 'readwrite').objectStore('users').put(user);
+                } else {
+                    sessionStorage.setItem('last_reading_page', page);
+                }
+            }
+        }
+
+        // Random Ayahs
+        function showRandomAyahs() {
+            results = [];
+            const indices = new Set();
+            while (indices.size < 10 && indices.size < ayahs.length) {
+                const i = Math.floor(Math.random() * ayahs.length);
+                if (!indices.has(i)) {
+                    indices.add(i);
+                    results.push(ayahs[i]);
+                }
+            }
+            currentPage = 0;
+            readingMode = false;
+            displayResults();
+        }
+
+        // Bookmarks
+        function toggleBookmark(surah, ayah) {
+            const tx = db.transaction(['bookmarks'], 'readwrite');
+            const store = tx.objectStore('bookmarks');
+            store.openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && cursor.value.user_id === user.email && cursor.value.surah_number === surah && cursor.value.ayah_number === ayah) {
+                    cursor.delete();
+                    loadBookmarks();
+                    return;
+                }
+                if (cursor) cursor.continue();
+                else {
+                    store.add({ user_id: user.email, surah_number: surah, ayah_number: ayah });
+                    loadBookmarks();
+                }
+            };
+        }
+
+        function loadBookmarks() {
+            if (!user) return;
+            const tx = db.transaction(['bookmarks']);
+            const html = [];
+            tx.objectStore('bookmarks').openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && cursor.value.user_id === user.email) {
+                    const { surah_number, ayah_number } = cursor.value;
+                    html.push(`<p>س ${surah_number} آ ${ayah_number} <button onclick="readFromHere(${surah_number}, ${ayah_number})" class="bg-yellow-500 text-white p-1 rounded">📖</button></p>`);
+                    cursor.continue();
+                } else {
+                    document.getElementById('bookmark-list').innerHTML = html.join('') || '<p>کوئی بک مارکس نہیں</p>';
+                }
+            };
+        }
+
+        // Notes
+        function saveNote(surah, ayah, text) {
+            const tx = db.transaction(['notes'], 'readwrite');
+            const store = tx.objectStore('notes');
+            store.openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && cursor.value.user_id === user.email && cursor.value.surah_number === surah && cursor.value.ayah_number === ayah) {
+                    if (text) cursor.update({ user_id: user.email, surah_number: surah, ayah_number: ayah, text });
+                    else cursor.delete();
+                    return;
+                }
+                if (cursor) cursor.continue();
+                else if (text) {
+                    store.add({ user_id: user.email, surah_number: surah, ayah_number: ayah, text });
+                }
+            };
+        }
+
+        function getNote(surah, ayah) {
+            let note = '';
+            const tx = db.transaction(['notes']);
+            tx.objectStore('notes').openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && cursor.value.user_id === user.email && cursor.value.surah_number === surah && cursor.value.ayah_number === ayah) {
+                    note = cursor.value.text;
+                }
+                if (cursor) cursor.continue();
+            };
+            return note;
+        }
+
+        // Audio
+        function playAudio(surah, ayah) {
+            const audio = new Audio(`https://cdn.alquran.cloud/media/audio/ayah/ar.alafasy/${surah}/${ayah}`);
+            audio.play().catch(() => alert('آڈیو لوڈ نہیں ہو سکا'));
+        }
+
+        // Admin Panel
+        function loadAdminPanel() {
+            const tx = db.transaction(['users']);
+            const users = [];
+            tx.objectStore('users').openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    users.push(`<p>${cursor.value.email} (${cursor.value.role}) <button onclick="deleteUser('${cursor.value.email}')" class="bg-red-500 text-white p-1 rounded">حذف</button></p>`);
+                    cursor.continue();
+                } else {
+                    document.getElementById('user-list').innerHTML = users.join('');
+                }
+            };
+            const searches = {};
+            db.transaction(['searches']).objectStore('searches').openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    searches[cursor.value.query] = (searches[cursor.value.query] || 0) + 1;
+                    cursor.continue();
+                } else {
+                    document.getElementById('analytics').innerHTML = Object.entries(searches).map(([q, c]) => `<p>${q}: ${c} بار</p>`).join('');
+                }
+            };
+        }
+
+        function deleteUser(email) {
+            if (email === user.email) return alert('خود کو حذف نہیں کر سکتے');
+            db.transaction(['users'], 'readwrite').objectStore('users').delete(email).onsuccess = loadAdminPanel;
+        }
+
+        // Utilities
+        function changePage(delta) {
+            currentPage += delta;
+            displayResults();
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+        }
+
+        function logSearch(query) {
+            if (user) db.transaction(['searches'], 'readwrite').objectStore('searches').add({ query, timestamp: Date.now() });
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let y = 10;
+            results.slice(currentPage * (readingMode ? AYAH_PER_PAGE : SEARCH_PER_PAGE), (currentPage + 1) * (readingMode ? AYAH_PER_PAGE : SEARCH_PER_PAGE)).forEach(ayah => {
+                doc.setFont('Amiri');
+                doc.text(ayah.arabic_text, 10, y, { align: 'right' });
+                y += 10;
+                doc.setFont('NotoNastaliqUrdu');
+                doc.text(ayah.urdu_translation, 10, y, { align: 'right' });
+                y += 10;
+                doc.text(`س ${ayah.surah_number} آ ${ayah.ayah_number}`, 10, y, { align: 'right' });
+                y += 10;
+            });
+            doc.save('quran_results.pdf');
+        }
+
+        // Initialize
+        fetchData();
+    </script>
+</body>
+</html>

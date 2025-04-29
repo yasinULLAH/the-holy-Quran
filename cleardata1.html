@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clear All Storage</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 50px; }
+    button { font-size: 18px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h1>Clear All Storage</h1>
+  <button onclick="clearAll()">Clear LocalStorage, SessionStorage, IndexedDB & Cookies</button>
+
+  <script>
+    async function clearAll() {
+      // Clear localStorage
+      localStorage.clear();
+
+      // Clear sessionStorage
+      sessionStorage.clear();
+
+      // Clear IndexedDB
+      if (indexedDB.databases) {
+        const dbs = await indexedDB.databases();
+        for (const db of dbs) {
+          if (db.name) indexedDB.deleteDatabase(db.name);
+        }
+      } else {
+        console.warn("indexedDB.databases() not supported in this browser.");
+      }
+
+      // Clear cookies
+      document.cookie.split(";").forEach(cookie => {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      });
+
+      alert("All client-side storage cleared.");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+Single-Page Quran Web App  
+
+Develop a self-contained Quran application using pure HTML, CSS, and JavaScript, with IndexedDB for offline storage. No external libraries or frameworks allowed.
+
+ Data Handling & Persistence:  
+
+- Fetch Quran text from `data/data.AM` on first launch.  
+
+- Each line follows the format: `[Arabic Ayah] ترجمہ: [Urdu Translation]س [Surah Number] آ [Ayah Number]`.Examples:
+بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ ترجمہ: شروع اللہ کے نام سے جو بڑا مہربان نہایت رحم والا ہے<br/>س 001 آ 001
+الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ترجمہ: سب تعریفیں اللہ کے لیے ہیں جو سب جہانوں کا پالنے والا ہے<br/>س 001 آ 002
+
+
+- Parse and store extracted data in IndexedDB (`quranDB → ayahs`).  
+
+- Show loading progress indication during this one-time setup.  
+
+- Ensure subsequent loads skip this process using a stored flag.
+
+ Core Features:  
+
+- Navigation: List all Surahs, display Ayahs with Arabic & Urdu translations.  
+
+- Search: Full-text search with highlighted matches in results (with or without arabic diacritics).  
+
+- Bookmarks & Read Tracking: Mark Ayahs for reference & track progress. Add notes. 
+
+- Reading Modes: Ayah-by-Ayah & paginated view with gestures Full screen(just reading remove all irrelevant things) and specifiable lines per page show(must fit on screen).  
+
+- Settings: UI language, theme, font size, content visibility, and persistence.  
+
+- Offline Capability.  
+
+- UI/UX: Mobile-first, futuristic styling, minimalistic design.  
+
+User Features:  
+
+- Backup & Restore: Export and import app data (bookmarks, read progress, settings) as a file.  
+
+- Alerts & Reminders: Set notifications/reminders for reading daily quran and surah, custom alerts for specific Ayahs.
+
+- Reporting: View reading progress breakdown by date, month, or year.  
+
+- History Log: Track reading sessions, last accessed Ayahs, and navigation trends.  
+
+Strict Output Requirements:  
+
+Deliver everything within a single `index.html` file, ensuring production-ready code without explanations or excessive formatting.

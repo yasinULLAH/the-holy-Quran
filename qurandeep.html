@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran App</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --text: #ecf0f1;
+            --text-secondary: #bdc3c7;
+            --background: #1a1a1a;
+            --card: #2d2d2d;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --error: #e74c3c;
+        }
+
+        [data-theme="light"] {
+            --primary: #3498db;
+            --secondary: #2980b9;
+            --accent: #e74c3c;
+            --text: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --background: #f5f5f5;
+            --card: #ffffff;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --error: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .nav-toggle {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 80%;
+            max-width: 300px;
+            height: 100vh;
+            background-color: var(--secondary);
+            z-index: 101;
+            transition: left 0.3s;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        nav.open {
+            left: 0;
+        }
+
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .close-nav {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 0.5rem;
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        main {
+            flex: 1;
+            padding: 1rem;
+        }
+
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .progress-bar {
+            width: 80%;
+            max-width: 400px;
+            height: 20px;
+            background-color: var(--secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .surah-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .surah-card {
+            background-color: var(--card);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .surah-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .surah-number {
+            background-color: var(--accent);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .surah-name {
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+
+        .surah-details {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .ayah-container {
+            margin-bottom: 2rem;
+        }
+
+        .ayah-header {
+            background-color: var(--secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ayah-number {
+            background-color: var(--accent);
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .ayah-content {
+            background-color: var(--card);
+            padding: 1rem;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .ayah-arabic {
+            font-size: 1.5rem;
+            text-align: right;
+            line-height: 2.5rem;
+            margin-bottom: 1rem;
+            font-family: 'Traditional Arabic', 'Arial', sans-serif;
+        }
+
+        .ayah-translation {
+            margin-bottom: 1rem;
+        }
+
+        .ayah-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--text);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-error {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .search-container {
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--card);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .search-results {
+            margin-top: 1rem;
+        }
+
+        .search-result-item {
+            background-color: var(--card);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .search-result-item:hover {
+            background-color: var(--secondary);
+        }
+
+        .highlight {
+            background-color: yellow;
+            color: black;
+        }
+
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .setting-group {
+            background-color: var(--card);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .setting-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .setting-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--secondary);
+        }
+
+        select, input[type="number"] {
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: none;
+            background-color: var(--secondary);
+            color: var(--text);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--secondary);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .fullscreen-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .fullscreen-ayah {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-family: 'Traditional Arabic', 'Arial', sans-serif;
+        }
+
+        .fullscreen-translation {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .fullscreen-nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: var(--secondary);
+            color: var(--text);
+        }
+
+        .page-btn.active {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .bookmarks-container {
+            margin-top: 1rem;
+        }
+
+        .bookmark-item {
+            background-color: var(--card);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .bookmark-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .bookmark-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .notes-container {
+            margin-top: 1rem;
+        }
+
+        .note-input {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--card);
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .history-item {
+            background-color: var(--card);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-report {
+            margin-top: 1rem;
+        }
+
+        .progress-chart {
+            height: 10px;
+            background-color: var(--secondary);
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success);
+            width: 0%;
+        }
+
+        .backup-container {
+            margin-top: 1rem;
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .surah-list {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="#" class="logo">Quran App</a>
+        <button class="nav-toggle">☰</button>
+    </header>
+
+    <nav id="main-nav">
+        <div class="nav-header">
+            <span>Menu</span>
+            <button class="close-nav">×</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="nav-link" data-page="surahs">Surahs</a></li>
+            <li><a href="#" class="nav-link" data-page="search">Search</a></li>
+            <li><a href="#" class="nav-link" data-page="bookmarks">Bookmarks</a></li>
+            <li><a href="#" class="nav-link" data-page="history">History</a></li>
+            <li><a href="#" class="nav-link" data-page="progress">Progress</a></li>
+            <li><a href="#" class="nav-link" data-page="settings">Settings</a></li>
+            <li><a href="#" class="nav-link" data-page="backup">Backup</a></li>
+        </ul>
+    </nav>
+
+    <div class="overlay" id="nav-overlay"></div>
+
+    <main id="app-content">
+        <div class="loading-container" id="loading-screen">
+            <h2>Loading Quran Data</h2>
+            <div class="progress-bar">
+                <div class="progress" id="loading-progress"></div>
+            </div>
+            <p id="loading-status">Initializing...</p>
+        </div>
+
+        <!-- Surahs Page -->
+        <div class="page" id="surahs-page" style="display: none;">
+            <h2>Surahs</h2>
+            <div class="surah-list" id="surah-list"></div>
+        </div>
+
+        <!-- Ayahs Page -->
+        <div class="page" id="ayahs-page" style="display: none;">
+            <div class="ayah-header">
+                <h2 id="surah-name-display"></h2>
+                <div>
+                    <button class="btn btn-primary" id="fullscreen-btn">Full Screen</button>
+                    <button class="btn btn-secondary" id="back-to-surahs">Back to Surahs</button>
+                </div>
+            </div>
+            <div id="ayahs-container"></div>
+            <div class="pagination" id="pagination-controls"></div>
+        </div>
+
+        <!-- Search Page -->
+        <div class="page" id="search-page" style="display: none;">
+            <h2>Search Quran</h2>
+            <div class="search-container">
+                <input type="text" class="search-input" id="search-input" placeholder="Search in translations...">
+            </div>
+            <div class="search-results" id="search-results"></div>
+        </div>
+
+        <!-- Bookmarks Page -->
+        <div class="page" id="bookmarks-page" style="display: none;">
+            <h2>Bookmarks</h2>
+            <div class="bookmarks-container" id="bookmarks-container"></div>
+        </div>
+
+        <!-- History Page -->
+        <div class="page" id="history-page" style="display: none;">
+            <h2>Reading History</h2>
+            <div id="history-container"></div>
+        </div>
+
+        <!-- Progress Page -->
+        <div class="page" id="progress-page" style="display: none;">
+            <h2>Reading Progress</h2>
+            <div class="progress-report" id="progress-report"></div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="settings-page" style="display: none;">
+            <h2>Settings</h2>
+            <div class="settings-container">
+                <div class="setting-group">
+                    <div class="setting-title">Appearance</div>
+                    <div class="setting-option">
+                        <span>Theme</span>
+                        <select id="theme-select">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </div>
+                    <div class="setting-option">
+                        <span>Arabic Font Size</span>
+                        <input type="number" id="arabic-font-size" min="16" max="32" value="24">
+                    </div>
+                    <div class="setting-option">
+                        <span>Translation Font Size</span>
+                        <input type="number" id="translation-font-size" min="14" max="24" value="16">
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-title">Reading</div>
+                    <div class="setting-option">
+                        <span>Ayahs per page</span>
+                        <input type="number" id="ayahs-per-page" min="1" max="20" value="10">
+                    </div>
+                    <div class="setting-option">
+                        <span>Show Arabic</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-arabic" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-option">
+                        <span>Show Translation</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-translation" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-title">Reminders</div>
+                    <div class="setting-option">
+                        <span>Daily Reminder</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="daily-reminder">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-option" id="reminder-time-container" style="display: none;">
+                        <span>Reminder Time</span>
+                        <input type="time" id="reminder-time">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="save-settings">Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Backup Page -->
+        <div class="page" id="backup-page" style="display: none;">
+            <h2>Backup & Restore</h2>
+            <div class="backup-container">
+                <p>Backup your app data including bookmarks, notes, and reading progress.</p>
+                <div class="backup-actions">
+                    <button class="btn btn-primary" id="export-data">Export Data</button>
+                    <button class="btn btn-secondary" id="import-data">Import Data</button>
+                    <input type="file" id="import-file" style="display: none;" accept=".json">
+                </div>
+            </div>
+        </div>
+
+        <!-- Fullscreen Mode -->
+        <div class="fullscreen-mode" id="fullscreen-mode" style="display: none;">
+            <div class="fullscreen-ayah" id="fullscreen-ayah"></div>
+            <div class="fullscreen-translation" id="fullscreen-translation"></div>
+            <div class="fullscreen-nav">
+                <button class="btn btn-primary" id="prev-ayah-fs">Previous</button>
+                <button class="btn btn-primary" id="next-ayah-fs">Next</button>
+                <button class="btn btn-error" id="exit-fs">Exit</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Database and App State
+        const dbName = 'quranDB';
+        const dbVersion = 1;
+        let db;
+        let appState = {
+            currentPage: 'surahs',
+            currentSurah: null,
+            currentAyah: null,
+            settings: {
+                theme: 'dark',
+                arabicFontSize: 24,
+                translationFontSize: 16,
+                ayahsPerPage: 10,
+                showArabic: true,
+                showTranslation: true,
+                dailyReminder: false,
+                reminderTime: '08:00'
+            },
+            bookmarks: [],
+            notes: {},
+            readHistory: [],
+            progress: {}
+        };
+
+        // DOM Elements
+        const elements = {
+            loadingScreen: document.getElementById('loading-screen'),
+            loadingProgress: document.getElementById('loading-progress'),
+            loadingStatus: document.getElementById('loading-status'),
+            appContent: document.getElementById('app-content'),
+            navToggle: document.querySelector('.nav-toggle'),
+            mainNav: document.getElementById('main-nav'),
+            navOverlay: document.getElementById('nav-overlay'),
+            closeNav: document.querySelector('.close-nav'),
+            navLinks: document.querySelectorAll('.nav-link'),
+            pages: document.querySelectorAll('.page'),
+            surahList: document.getElementById('surah-list'),
+            ayahsPage: document.getElementById('ayahs-page'),
+            surahNameDisplay: document.getElementById('surah-name-display'),
+            ayahsContainer: document.getElementById('ayahs-container'),
+            backToSurahs: document.getElementById('back-to-surahs'),
+            paginationControls: document.getElementById('pagination-controls'),
+            searchPage: document.getElementById('search-page'),
+            searchInput: document.getElementById('search-input'),
+            searchResults: document.getElementById('search-results'),
+            bookmarksPage: document.getElementById('bookmarks-page'),
+            bookmarksContainer: document.getElementById('bookmarks-container'),
+            historyPage: document.getElementById('history-page'),
+            historyContainer: document.getElementById('history-container'),
+            progressPage: document.getElementById('progress-page'),
+            progressReport: document.getElementById('progress-report'),
+            settingsPage: document.getElementById('settings-page'),
+            themeSelect: document.getElementById('theme-select'),
+            arabicFontSize: document.getElementById('arabic-font-size'),
+            translationFontSize: document.getElementById('translation-font-size'),
+            ayahsPerPage: document.getElementById('ayahs-per-page'),
+            showArabic: document.getElementById('show-arabic'),
+            showTranslation: document.getElementById('show-translation'),
+            dailyReminder: document.getElementById('daily-reminder'),
+            reminderTimeContainer: document.getElementById('reminder-time-container'),
+            reminderTime: document.getElementById('reminder-time'),
+            saveSettings: document.getElementById('save-settings'),
+            backupPage: document.getElementById('backup-page'),
+            exportData: document.getElementById('export-data'),
+            importData: document.getElementById('import-data'),
+            importFile: document.getElementById('import-file'),
+            fullscreenMode: document.getElementById('fullscreen-mode'),
+            fullscreenAyah: document.getElementById('fullscreen-ayah'),
+            fullscreenTranslation: document.getElementById('fullscreen-translation'),
+            prevAyahFs: document.getElementById('prev-ayah-fs'),
+            nextAyahFs: document.getElementById('next-ayah-fs'),
+            exitFs: document.getElementById('exit-fs'),
+            fullscreenBtn: document.getElementById('fullscreen-btn')
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        async function initApp() {
+            // Check if IndexedDB is supported
+            if (!('indexedDB' in window)) {
+                showError('IndexedDB is not supported in your browser. This app requires IndexedDB to function properly.');
+                return;
+            }
+
+            // Open the database
+            const request = indexedDB.open(dbName, dbVersion);
+
+            request.onupgradeneeded = function(event) {
+                const db = event.target.result;
+                
+                // Create object store for ayahs if it doesn't exist
+                if (!db.objectStoreNames.contains('ayahs')) {
+                    db.createObjectStore('ayahs', { keyPath: ['surah', 'ayah'] });
+                }
+                
+                // Create object store for app state
+                if (!db.objectStoreNames.contains('appState')) {
+                    db.createObjectStore('appState', { keyPath: 'id' });
+                }
+            };
+
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                checkInitialData();
+            };
+
+            request.onerror = function(event) {
+                showError('Failed to open database: ' + event.target.error);
+            };
+        }
+
+        async function checkInitialData() {
+            const transaction = db.transaction(['ayahs', 'appState'], 'readonly');
+            const ayahsStore = transaction.objectStore('ayahs');
+            const appStateStore = transaction.objectStore('appState');
+            
+            // Check if ayahs exist
+            const ayahsRequest = ayahsStore.count();
+            
+            ayahsRequest.onsuccess = function() {
+                if (ayahsRequest.result === 0) {
+                    // No ayahs found, need to load data
+                    loadInitialData();
+                } else {
+                    // Data exists, load app state
+                    loadAppState();
+                }
+            };
+            
+            ayahsRequest.onerror = function() {
+                showError('Failed to check initial data');
+            };
+        }
+
+        async function loadInitialData() {
+            elements.loadingStatus.textContent = 'Fetching Quran data...';
+            
+            try {
+                const response = await fetch('data/data.AM');
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const text = await response.text();
+                const lines = text.split('\n');
+                const totalLines = lines.length;
+                let processedLines = 0;
+                
+                elements.loadingStatus.textContent = 'Parsing Quran data...';
+                
+                const transaction = db.transaction(['ayahs', 'appState'], 'readwrite');
+                const ayahsStore = transaction.objectStore('ayahs');
+                
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    
+                    try {
+                        const ayahData = parseAyahLine(line);
+                        if (ayahData) {
+                            ayahsStore.add(ayahData);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing line:', line, e);
+                    }
+                    
+                    processedLines++;
+                    const progress = Math.floor((processedLines / totalLines) * 100);
+                    elements.loadingProgress.style.width = `${progress}%`;
+                    
+                    // Update status every 100 lines to reduce UI updates
+                    if (processedLines % 100 === 0) {
+                        elements.loadingStatus.textContent = `Processing ${processedLines} of ${totalLines} lines...`;
+                    }
+                }
+                
+                transaction.oncomplete = function() {
+                    // Mark data as loaded
+                    const appStateTransaction = db.transaction('appState', 'readwrite');
+                    const appStateStore = appStateTransaction.objectStore('appState');
+                    appStateStore.put({ id: 'initialDataLoaded', value: true });
+                    
+                    // Load app state
+                    loadAppState();
+                };
+                
+                transaction.onerror = function() {
+                    showError('Failed to save Quran data');
+                };
+            } catch (error) {
+                showError('Failed to load initial data: ' + error.message);
+            }
+        }
+
+        function parseAyahLine(line) {
+            // Sample line format: "[Arabic Ayah] ترجمہ: [Urdu Translation]س [Surah Number] آ [Ayah Number]"
+            const translationSeparator = ' ترجمہ: ';
+            const surahSeparator = 'س ';
+            const ayahSeparator = ' آ ';
+            
+            const translationIndex = line.indexOf(translationSeparator);
+            if (translationIndex === -1) return null;
+            
+            const arabic = line.substring(0, translationIndex).trim();
+            const remaining = line.substring(translationIndex + translationSeparator.length);
+            
+            const surahIndex = remaining.lastIndexOf(surahSeparator);
+            if (surahIndex === -1) return null;
+            
+            const translation = remaining.substring(0, surahIndex).trim();
+            const surahAyahPart = remaining.substring(surahIndex + surahSeparator.length);
+            
+            const ayahIndex = surahAyahPart.lastIndexOf(ayahSeparator);
+            if (ayahIndex === -1) return null;
+            
+            const surah = parseInt(surahAyahPart.substring(0, ayahIndex).trim());
+            const ayah = parseInt(surahAyahPart.substring(ayahIndex + ayahSeparator.length).trim());
+            
+            return {
+                surah,
+                ayah,
+                arabic,
+                translation
+            };
+        }
+
+        async function loadAppState() {
+            const transaction = db.transaction('appState', 'readonly');
+            const appStateStore = transaction.objectStore('appState');
+            
+            // Load settings
+            const settingsRequest = appStateStore.get('settings');
+            // Load bookmarks
+            const bookmarksRequest = appStateStore.get('bookmarks');
+            // Load notes
+            const notesRequest = appStateStore.get('notes');
+            // Load history
+            const historyRequest = appStateStore.get('history');
+            // Load progress
+            const progressRequest = appStateStore.get('progress');
+            
+            settingsRequest.onsuccess = function() {
+                if (settingsRequest.result) {
+                    appState.settings = { ...appState.settings, ...settingsRequest.result.value };
+                    applySettings();
+                }
+            };
+            
+            bookmarksRequest.onsuccess = function() {
+                if (bookmarksRequest.result) {
+                    appState.bookmarks = bookmarksRequest.result.value || [];
+                }
+            };
+            
+            notesRequest.onsuccess = function() {
+                if (notesRequest.result) {
+                    appState.notes = notesRequest.result.value || {};
+                }
+            };
+            
+            historyRequest.onsuccess = function() {
+                if (historyRequest.result) {
+                    appState.readHistory = historyRequest.result.value || [];
+                }
+            };
+            
+            progressRequest.onsuccess = function() {
+                if (progressRequest.result) {
+                    appState.progress = progressRequest.result.value || {};
+                }
+            };
+            
+            transaction.oncomplete = function() {
+                // Hide loading screen
+                elements.loadingScreen.style.display = 'none';
+                
+                // Initialize UI
+                initUI();
+                
+                // Load surah list
+                loadSurahList();
+                
+                // Show current page
+                showPage(appState.currentPage);
+            };
+            
+            transaction.onerror = function() {
+                showError('Failed to load app state');
+            };
+        }
+
+        function initUI() {
+            // Navigation toggle
+            elements.navToggle.addEventListener('click', function() {
+                elements.mainNav.classList.add('open');
+                elements.navOverlay.classList.add('open');
+            });
+            
+            // Close nav
+            elements.closeNav.addEventListener('click', closeNav);
+            elements.navOverlay.addEventListener('click', closeNav);
+            
+            // Nav links
+            elements.navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    appState.currentPage = page;
+                    showPage(page);
+                    closeNav();
+                });
+            });
+            
+            // Back to surahs
+            elements.backToSurahs.addEventListener('click', function() {
+                appState.currentPage = 'surahs';
+                showPage('surahs');
+            });
+            
+            // Search input
+            elements.searchInput.addEventListener('input', debounce(searchAyahs, 300));
+            
+            // Settings
+            populateSettingsForm();
+            elements.saveSettings.addEventListener('click', saveSettings);
+            elements.dailyReminder.addEventListener('change', function() {
+                elements.reminderTimeContainer.style.display = this.checked ? 'flex' : 'none';
+            });
+            
+            // Backup
+            elements.exportData.addEventListener('click', exportAppData);
+            elements.importData.addEventListener('click', function() {
+                elements.importFile.click();
+            });
+            elements.importFile.addEventListener('change', importAppData);
+            
+            // Fullscreen mode
+            elements.fullscreenBtn.addEventListener('click', enterFullscreenMode);
+            elements.prevAyahFs.addEventListener('click', showPrevAyahFs);
+            elements.nextAyahFs.addEventListener('click', showNextAyahFs);
+            elements.exitFs.addEventListener('click', exitFullscreenMode);
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').then(
+                    registration => console.log('ServiceWorker registration successful'),
+                    err => console.log('ServiceWorker registration failed: ', err)
+                );
+            }
+        }
+
+        function closeNav() {
+            elements.mainNav.classList.remove('open');
+            elements.navOverlay.classList.remove('open');
+        }
+
+        function showPage(page) {
+            // Hide all pages
+            elements.pages.forEach(p => p.style.display = 'none');
+            
+            // Show requested page
+            document.getElementById(`${page}-page`).style.display = 'block';
+            
+            // Load page content if needed
+            switch (page) {
+                case 'bookmarks':
+                    loadBookmarks();
+                    break;
+                case 'history':
+                    loadHistory();
+                    break;
+                case 'progress':
+                    loadProgressReport();
+                    break;
+            }
+        }
+
+        async function loadSurahList() {
+            const transaction = db.transaction('ayahs', 'readonly');
+            const ayahsStore = transaction.objectStore('ayahs');
+            const index = ayahsStore.index('surah');
+            
+            // Get distinct surah numbers
+            const surahs = new Set();
+            const request = index.openKeyCursor();
+            
+            request.onsuccess = function(event) {
+                const cursor = event.target.result;
+                if (cursor) {
+                    surahs.add(cursor.key);
+                    cursor.continue();
+                } else {
+                    // All surahs collected, now display them
+                    displaySurahList(Array.from(surahs).sort((a, b) => a - b));
+                }
+            };
+            
+            request.onerror = function() {
+                showError('Failed to load surah list');
+            };
+        }
+
+        async function displaySurahList(surahs) {
+            elements.surahList.innerHTML = '';
+            
+            // Get surah names (simplified for this example)
+            const surahNames = {
+                1: 'Al-Fatihah',
+                2: 'Al-Baqarah',
+                // ... add all 114 surah names
+            };
+            
+            for (const surah of surahs) {
+                const card = document.createElement('div');
+                card.className = 'surah-card';
+                card.innerHTML = `
+                    <div class="surah-number">${surah}</div>
+                    <div class="surah-name">${surahNames[surah] || `Surah ${surah}`}</div>
+                    <div class="surah-details">Click to view</div>
+                `;
+                
+                card.addEventListener('click', function() {
+                    openSurah(surah);
+                });
+                
+                elements.surahList.appendChild(card);
+            }
+        }
+
+        async function openSurah(surah) {
+            appState.currentSurah = surah;
+            appState.currentPage = 'ayahs';
+            
+            // Update UI
+            elements.surahNameDisplay.textContent = `Surah ${surah}`;
+            showPage('ayahs');
+            
+            // Load ayahs
+            loadAyahs(surah, 1);
+        }
+
+        async function loadAyahs(surah, page = 1) {
+            const ayahsPerPage = appState.settings.ayahsPerPage;
+            const startAyah = (page - 1) * ayahsPerPage + 1;
+            const endAyah = page * ayahsPerPage;
+            
+            const transaction = db.transaction('ayahs', 'readonly');
+            const ayahsStore = transaction.objectStore('ayahs');
+            const range = IDBKeyRange.bound([surah, startAyah], [surah, endAyah]);
+            const request = ayahsStore.getAll(range);
+            
+            request.onsuccess = function() {
+                const ayahs = request.result;
+                displayAyahs(ayahs);
+                
+                // Update pagination
+                updatePagination(surah, page);
+                
+                // Add to history
+                addToHistory(surah, startAyah);
+            };
+            
+            request.onerror = function() {
+                showError('Failed to load ayahs');
+            };
+        }
+
+        function displayAyahs(ayahs) {
+            elements.ayahsContainer.innerHTML = '';
+            
+            for (const ayah of ayahs) {
+                const ayahContainer = document.createElement('div');
+                ayahContainer.className = 'ayah-container';
+                
+                const ayahHeader = document.createElement('div');
+                ayahHeader.className = 'ayah-header';
+                ayahHeader.innerHTML = `
+                    <div class="ayah-number">${ayah.ayah}</div>
+                    <div class="ayah-actions">
+                        <button class="btn btn-primary toggle-bookmark" data-surah="${ayah.surah}" data-ayah="${ayah.ayah}">
+                            ${isBookmarked(ayah.surah, ayah.ayah) ? '★' : '☆'}
+                        </button>
+                        <button class="btn btn-success mark-read" data-surah="${ayah.surah}" data-ayah="${ayah.ayah}">
+                            Mark Read
+                        </button>
+                    </div>
+                `;
+                
+                const ayahContent = document.createElement('div');
+                ayahContent.className = 'ayah-content';
+                
+                if (appState.settings.showArabic) {
+                    const arabicElem = document.createElement('div');
+                    arabicElem.className = 'ayah-arabic';
+                    arabicElem.style.fontSize = `${appState.settings.arabicFontSize}px`;
+                    arabicElem.textContent = ayah.arabic;
+                    ayahContent.appendChild(arabicElem);
+                }
+                
+                if (appState.settings.showTranslation) {
+                    const translationElem = document.createElement('div');
+                    translationElem.className = 'ayah-translation';
+                    translationElem.style.fontSize = `${appState.settings.translationFontSize}px`;
+                    translationElem.textContent = ayah.translation;
+                    ayahContent.appendChild(translationElem);
+                }
+                
+                // Add note if exists
+                const noteKey = `${ayah.surah}:${ayah.ayah}`;
+                if (appState.notes[noteKey]) {
+                    const noteElem = document.createElement('div');
+                    noteElem.className = 'ayah-note';
+                    noteElem.innerHTML = `<strong>Note:</strong> ${appState.notes[noteKey]}`;
+                    ayahContent.appendChild(noteElem);
+                }
+                
+                // Add note input
+                const noteInputContainer = document.createElement('div');
+                noteInputContainer.className = 'notes-container';
+                noteInputContainer.innerHTML = `
+                    <textarea class="note-input" placeholder="Add a note..." data-surah="${ayah.surah}" data-ayah="${ayah.ayah}">${appState.notes[noteKey] || ''}</textarea>
+                    <button class="btn btn-primary save-note" data-surah="${ayah.surah}" data-ayah="${ayah.ayah}">Save Note</button>
+                `;
+                ayahContent.appendChild(noteInputContainer);
+                
+                ayahContainer.appendChild(ayahHeader);
+                ayahContainer.appendChild(ayahContent);
+                elements.ayahsContainer.appendChild(ayahContainer);
+            }
+            
+            // Add event listeners
+            document.querySelectorAll('.toggle-bookmark').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    toggleBookmark(
+                        parseInt(this.getAttribute('data-surah')),
+                        parseInt(this.getAttribute('data-ayah'))
+                    );
+                });
+            });
+            
+            document.querySelectorAll('.mark-read').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    markAsRead(
+                        parseInt(this.getAttribute('data-surah')),
+                        parseInt(this.getAttribute('data-ayah'))
+                    );
+                });
+            });
+            
+            document.querySelectorAll('.save-note').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    saveNote(
+                        parseInt(this.getAttribute('data-surah')),
+                        parseInt(this.getAttribute('data-ayah')),
+                        this.previousElementSibling.value
+                    );
+                });
+            });
+        }
+
+        function updatePagination(surah, currentPage) {
+            // In a real app, we would know the total number of ayahs per surah
+            // For this example, we'll assume 10 pages for each surah
+            const totalPages = 10;
+            
+            elements.paginationControls.innerHTML = '';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', function() {
+                    loadAyahs(surah, i);
+                });
+                elements.paginationControls.appendChild(pageBtn);
+            }
+        }
+
+        function toggleBookmark(surah, ayah) {
+            const index = appState.bookmarks.findIndex(b => b.surah === surah && b.ayah === ayah);
+            
+            if (index === -1) {
+                // Add bookmark
+                appState.bookmarks.push({ surah, ayah, date: new Date().toISOString() });
+            } else {
+                // Remove bookmark
+                appState.bookmarks.splice(index, 1);
+            }
+            
+            // Update UI
+            const bookmarkBtn = document.querySelector(`.toggle-bookmark[data-surah="${surah}"][data-ayah="${ayah}"]`);
+            if (bookmarkBtn) {
+                bookmarkBtn.textContent = index === -1 ? '★' : '☆';
+            }
+            
+            // Save to DB
+            saveAppState('bookmarks');
+        }
+
+        function isBookmarked(surah, ayah) {
+            return appState.bookmarks.some(b => b.surah === surah && b.ayah === ayah);
+        }
+
+        function markAsRead(surah, ayah) {
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (!appState.progress[today]) {
+                appState.progress[today] = [];
+            }
+            
+            const ayahKey = `${surah}:${ayah}`;
+            if (!appState.progress[today].includes(ayahKey)) {
+                appState.progress[today].push(ayahKey);
+                saveAppState('progress');
+                
+                // Show feedback
+                alert('Ayah marked as read');
+            } else {
+                alert('Ayah already marked as read today');
+            }
+        }
+
+        function saveNote(surah, ayah, note) {
+            const key = `${surah}:${ayah}`;
+            
+            if (note.trim()) {
+                appState.notes[key] = note.trim();
+            } else {
+                delete appState.notes[key];
+            }
+            
+            saveAppState('notes');
+            
+            // Refresh the ayah display
+            if (appState.currentPage === 'ayahs' && appState.currentSurah === surah) {
+                loadAyahs(surah, Math.ceil(ayah / appState.settings.ayahsPerPage));
+            }
+        }
+
+        function addToHistory(surah, ayah) {
+            const entry = {
+                surah,
+                ayah,
+                timestamp: new Date().toISOString()
+            };
+            
+            appState.readHistory.unshift(entry);
+            
+            // Keep only the last 100 entries
+            if (appState.readHistory.length > 100) {
+                appState.readHistory.pop();
+            }
+            
+            saveAppState('history');
+        }
+
+        function saveAppState(key) {
+            const transaction = db.transaction('appState', 'readwrite');
+            const appStateStore = transaction.objectStore('appState');
+            
+            let value;
+            switch (key) {
+                case 'settings':
+                    value = appState.settings;
+                    break;
+                case 'bookmarks':
+                    value = appState.bookmarks;
+                    break;
+                case 'notes':
+                    value = appState.notes;
+                    break;
+                case 'history':
+                    value = appState.readHistory;
+                    break;
+                case 'progress':
+                    value = appState.progress;
+                    break;
+                default:
+                    return;
+            }
+            
+            appStateStore.put({ id: key, value });
+            
+            transaction.onerror = function() {
+                console.error('Failed to save app state:', key);
+            };
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(function() {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
+
+        async function searchAyahs() {
+            const query = elements.searchInput.value.trim();
+            if (query.length < 3) {
+                elements.searchResults.innerHTML = '';
+                return;
+            }
+            
+            // Search in translations (case insensitive, without diacritics)
+            const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            const transaction = db.transaction('ayahs', 'readonly');
+            const ayahsStore = transaction.objectStore('ayahs');
+            const request = ayahsStore.getAll();
+            
+            request.onsuccess = function() {
+                const ayahs = request.result;
+                const results = ayahs.filter(ayah => {
+                    const normalizedTranslation = ayah.translation.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    return normalizedTranslation.includes(normalizedQuery);
+                });
+                
+                displaySearchResults(results, query);
+            };
+            
+            request.onerror = function() {
+                showError('Failed to search ayahs');
+            };
+        }
+
+        function displaySearchResults(results, query) {
+            elements.searchResults.innerHTML = '';
+            
+            if (results.length === 0) {
+                elements.searchResults.innerHTML = '<p>No results found</p>';
+                return;
+            }
+            
+            const normalizedQuery = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            results.forEach(ayah => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                
+                // Highlight matches in translation
+                const normalizedTranslation = ayah.translation.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                let startIndex = 0;
+                let highlightedTranslation = '';
+                
+                while (true) {
+                    const matchIndex = normalizedTranslation.indexOf(normalizedQuery, startIndex);
+                    if (matchIndex === -1) {
+                        highlightedTranslation += ayah.translation.substring(startIndex);
+                        break;
+                    }
+                    
+                    highlightedTranslation += ayah.translation.substring(startIndex, matchIndex);
+                    highlightedTranslation += `<span class="highlight">${ayah.translation.substring(matchIndex, matchIndex + query.length)}</span>`;
+                    
+                    startIndex = matchIndex + query.length;
+                }
+                
+                resultItem.innerHTML = `
+                    <div class="ayah-arabic">${ayah.arabic}</div>
+                    <div class="ayah-translation">${highlightedTranslation}</div>
+                    <div class="ayah-reference">Surah ${ayah.surah}, Ayah ${ayah.ayah}</div>
+                `;
+                
+                resultItem.addEventListener('click', function() {
+                    openSurah(ayah.surah);
+                    // Scroll to the ayah
+                    setTimeout(() => {
+                        const ayahElem = document.querySelector(`.ayah-number:contains("${ayah.ayah}")`);
+                        if (ayahElem) {
+                            ayahElem.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }, 100);
+                });
+                
+                elements.searchResults.appendChild(resultItem);
+            });
+        }
+
+        function loadBookmarks() {
+            elements.bookmarksContainer.innerHTML = '';
+            
+            if (appState.bookmarks.length === 0) {
+                elements.bookmarksContainer.innerHTML = '<p>No bookmarks yet</p>';
+                return;
+            }
+            
+            // Group bookmarks by surah
+            const bookmarksBySurah = {};
+            appState.bookmarks.forEach(bookmark => {
+                if (!bookmarksBySurah[bookmark.surah]) {
+                    bookmarksBySurah[bookmark.surah] = [];
+                }
+                bookmarksBySurah[bookmark.surah].push(bookmark);
+            });
+            
+            // Display bookmarks
+            for (const surah in bookmarksBySurah) {
+                const surahHeader = document.createElement('h3');
+                surahHeader.textContent = `Surah ${surah}`;
+                elements.bookmarksContainer.appendChild(surahHeader);
+                
+                bookmarksBySurah[surah].forEach(bookmark => {
+                    const bookmarkItem = document.createElement('div');
+                    bookmarkItem.className = 'bookmark-item';
+                    bookmarkItem.innerHTML = `
+                        <div class="bookmark-header">
+                            <span>Ayah ${bookmark.ayah}</span>
+                            <div class="bookmark-actions">
+                                <button class="btn btn-primary goto-ayah" data-surah="${surah}" data-ayah="${bookmark.ayah}">Go to</button>
+                                <button class="btn btn-error remove-bookmark" data-surah="${surah}" data-ayah="${bookmark.ayah}">Remove</button>
+                            </div>
+                        </div>
+                        <div class="bookmark-date">${new Date(bookmark.date).toLocaleString()}</div>
+                    `;
+                    
+                    elements.bookmarksContainer.appendChild(bookmarkItem);
+                });
+            }
+            
+            // Add event listeners
+            document.querySelectorAll('.goto-ayah').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const surah = parseInt(this.getAttribute('data-surah'));
+                    const ayah = parseInt(this.getAttribute('data-ayah'));
+                    openSurah(surah);
+                    
+                    // Calculate page
+                    const page = Math.ceil(ayah / appState.settings.ayahsPerPage);
+                    setTimeout(() => {
+                        loadAyahs(surah, page);
+                        
+                        // Scroll to the ayah
+                        setTimeout(() => {
+                            const ayahElem = document.querySelector(`.ayah-number:contains("${ayah}")`);
+                            if (ayahElem) {
+                                ayahElem.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }, 100);
+                    }, 100);
+                });
+            });
+            
+            document.querySelectorAll('.remove-bookmark').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const surah = parseInt(this.getAttribute('data-surah'));
+                    const ayah = parseInt(this.getAttribute('data-ayah'));
+                    
+                    // Remove bookmark
+                    const index = appState.bookmarks.findIndex(b => b.surah === surah && b.ayah === ayah);
+                    if (index !== -1) {
+                        appState.bookmarks.splice(index, 1);
+                        saveAppState('bookmarks');
+                        
+                        // Refresh bookmarks list
+                        loadBookmarks();
+                    }
+                });
+            });
+        }
+
+        function loadHistory() {
+            elements.historyContainer.innerHTML = '';
+            
+            if (appState.readHistory.length === 0) {
+                elements.historyContainer.innerHTML = '<p>No history yet</p>';
+                return;
+            }
+            
+            // Group history by date
+            const historyByDate = {};
+            appState.readHistory.forEach(entry => {
+                const date = new Date(entry.timestamp).toLocaleDateString();
+                if (!historyByDate[date]) {
+                    historyByDate[date] = [];
+                }
+                historyByDate[date].push(entry);
+            });
+            
+            // Display history
+            for (const date in historyByDate) {
+                const dateHeader = document.createElement('h3');
+                dateHeader.textContent = date;
+                elements.historyContainer.appendChild(dateHeader);
+                
+                historyByDate[date].forEach(entry => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.innerHTML = `
+                        <div>Surah ${entry.surah}, Ayah ${entry.ayah}</div>
+                        <div class="history-time">${new Date(entry.timestamp).toLocaleTimeString()}</div>
+                        <button class="btn btn-primary goto-ayah" data-surah="${entry.surah}" data-ayah="${entry.ayah}">Go to</button>
+                    `;
+                    
+                    elements.historyContainer.appendChild(historyItem);
+                });
+            }
+            
+            // Add event listeners
+            document.querySelectorAll('.goto-ayah').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const surah = parseInt(this.getAttribute('data-surah'));
+                    const ayah = parseInt(this.getAttribute('data-ayah'));
+                    openSurah(surah);
+                    
+                    // Calculate page
+                    const page = Math.ceil(ayah / appState.settings.ayahsPerPage);
+                    setTimeout(() => {
+                        loadAyahs(surah, page);
+                        
+                        // Scroll to the ayah
+                        setTimeout(() => {
+                            const ayahElem = document.querySelector(`.ayah-number:contains("${ayah}")`);
+                            if (ayahElem) {
+                                ayahElem.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }, 100);
+                    }, 100);
+                });
+            });
+        }
+
+        function loadProgressReport() {
+            elements.progressReport.innerHTML = '';
+            
+            if (Object.keys(appState.progress).length === 0) {
+                elements.progressReport.innerHTML = '<p>No progress data yet</p>';
+                return;
+            }
+            
+            // Calculate total ayahs read
+            let totalAyahsRead = 0;
+            for (const date in appState.progress) {
+                totalAyahsRead += appState.progress[date].length;
+            }
+            
+            // Calculate daily average
+            const days = Object.keys(appState.progress).length;
+            const dailyAverage = totalAyahsRead / days;
+            
+            // Display summary
+            const summary = document.createElement('div');
+            summary.innerHTML = `
+                <h3>Reading Summary</h3>
+                <p>Total Ayahs Read: ${totalAyahsRead}</p>
+                <p>Days Active: ${days}</p>
+                <p>Daily Average: ${dailyAverage.toFixed(1)} ayahs</p>
+            `;
+            elements.progressReport.appendChild(summary);
+            
+            // Display progress by date
+            const progressByDate = document.createElement('div');
+            progressByDate.innerHTML = '<h3>Progress by Date</h3>';
+            
+            // Sort dates in descending order
+            const sortedDates = Object.keys(appState.progress).sort((a, b) => new Date(b) - new Date(a));
+            
+            sortedDates.forEach(date => {
+                const dateProgress = document.createElement('div');
+                dateProgress.className = 'progress-item';
+                dateProgress.innerHTML = `
+                    <div class="progress-header">
+                        <span>${new Date(date).toLocaleDateString()}</span>
+                        <span>${appState.progress[date].length} ayahs</span>
+                    </div>
+                    <div class="progress-chart">
+                        <div class="progress-fill" style="width: ${(appState.progress[date].length / 20) * 100}%"></div>
+                    </div>
+                `;
+                progressByDate.appendChild(dateProgress);
+            });
+            
+            elements.progressReport.appendChild(progressByDate);
+        }
+
+        function populateSettingsForm() {
+            elements.themeSelect.value = appState.settings.theme;
+            elements.arabicFontSize.value = appState.settings.arabicFontSize;
+            elements.translationFontSize.value = appState.settings.translationFontSize;
+            elements.ayahsPerPage.value = appState.settings.ayahsPerPage;
+            elements.showArabic.checked = appState.settings.showArabic;
+            elements.showTranslation.checked = appState.settings.showTranslation;
+            elements.dailyReminder.checked = appState.settings.dailyReminder;
+            elements.reminderTime.value = appState.settings.reminderTime;
+            
+            elements.reminderTimeContainer.style.display = appState.settings.dailyReminder ? 'flex' : 'none';
+        }
+
+        function saveSettings() {
+            appState.settings = {
+                theme: elements.themeSelect.value,
+                arabicFontSize: parseInt(elements.arabicFontSize.value),
+                translationFontSize: parseInt(elements.translationFontSize.value),
+                ayahsPerPage: parseInt(elements.ayahsPerPage.value),
+                showArabic: elements.showArabic.checked,
+                showTranslation: elements.showTranslation.checked,
+                dailyReminder: elements.dailyReminder.checked,
+                reminderTime: elements.reminderTime.value
+            };
+            
+            saveAppState('settings');
+            applySettings();
+            
+            // Show confirmation
+            alert('Settings saved successfully');
+            
+            // Update reminder if needed
+            updateReminder();
+        }
+
+        function applySettings() {
+            // Apply theme
+            document.documentElement.setAttribute('data-theme', appState.settings.theme);
+            
+            // Apply font sizes
+            document.documentElement.style.setProperty('--arabic-font-size', `${appState.settings.arabicFontSize}px`);
+            document.documentElement.style.setProperty('--translation-font-size', `${appState.settings.translationFontSize}px`);
+            
+            // Refresh current page if needed
+            if (appState.currentPage === 'ayahs' && appState.currentSurah) {
+                loadAyahs(appState.currentSurah, 1);
+            }
+        }
+
+        function updateReminder() {
+            // Clear existing reminders
+            if ('Notification' in window && Notification.permission === 'granted') {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.getNotifications().then(notifications => {
+                            notifications.forEach(notification => notification.close());
+                        });
+                    });
+                });
+            }
+            
+            // Set new reminder if enabled
+            if (appState.settings.dailyReminder) {
+                if ('Notification' in window) {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            scheduleDailyReminder();
+                        }
+                    });
+                }
+            }
+        }
+
+        function scheduleDailyReminder() {
+            if (!appState.settings.dailyReminder || !appState.settings.reminderTime) return;
+            
+            const [hours, minutes] = appState.settings.reminderTime.split(':').map(Number);
+            const now = new Date();
+            const reminderTime = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                hours,
+                minutes,
+                0
+            );
+            
+            // If the time has already passed today, set for tomorrow
+            if (reminderTime <= now) {
+                reminderTime.setDate(reminderTime.getDate() + 1);
+            }
+            
+            const timeUntilReminder = reminderTime.getTime() - now.getTime();
+            
+            setTimeout(() => {
+                showReminderNotification();
+                // Schedule the next reminder
+                scheduleDailyReminder();
+            }, timeUntilReminder);
+        }
+
+        function showReminderNotification() {
+            if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification('Quran App Reminder', {
+                        body: 'Time to read Quran today!',
+                        icon: 'icon.png',
+                        vibrate: [200, 100, 200]
+                    });
+                });
+            }
+        }
+
+        function exportAppData() {
+            const data = {
+                bookmarks: appState.bookmarks,
+                notes: appState.notes,
+                history: appState.readHistory,
+                progress: appState.progress,
+                settings: appState.settings,
+                version: 1,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quran-app-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importAppData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate data
+                    if (!data.version || data.version !== 1) {
+                        throw new Error('Invalid backup file version');
+                    }
+                    
+                    // Update app state
+                    if (data.bookmarks) appState.bookmarks = data.bookmarks;
+                    if (data.notes) appState.notes = data.notes;
+                    if (data.history) appState.readHistory = data.history;
+                    if (data.progress) appState.progress = data.progress;
+                    if (data.settings) appState.settings = { ...appState.settings, ...data.settings };
+                    
+                    // Save to DB
+                    saveAppState('bookmarks');
+                    saveAppState('notes');
+                    saveAppState('history');
+                    saveAppState('progress');
+                    saveAppState('settings');
+                    
+                    // Apply settings
+                    applySettings();
+                    populateSettingsForm();
+                    
+                    // Show confirmation
+                    alert('Data imported successfully');
+                    
+                    // Refresh current views if needed
+                    if (appState.currentPage === 'bookmarks') loadBookmarks();
+                    if (appState.currentPage === 'history') loadHistory();
+                    if (appState.currentPage === 'progress') loadProgressReport();
+                    
+                } catch (error) {
+                    alert('Failed to import data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+
+        function enterFullscreenMode() {
+            if (!appState.currentSurah || !appState.currentAyah) return;
+            
+            // Get ayah data
+            const transaction = db.transaction('ayahs', 'readonly');
+            const ayahsStore = transaction.objectStore('ayahs');
+            const request = ayahsStore.get([appState.currentSurah, appState.currentAyah]);
+            
+            request.onsuccess = function() {
+                const ayah = request.result;
+                if (ayah) {
+                    elements.fullscreenAyah.textContent = ayah.arabic;
+                    elements.fullscreenTranslation.textContent = ayah.translation;
+                    elements.fullscreenMode.style.display = 'flex';
+                    
+                    // Set font sizes
+                    elements.fullscreenAyah.style.fontSize = `${appState.settings.arabicFontSize * 1.5}px`;
+                    elements.fullscreenTranslation.style.fontSize = `${appState.settings.translationFontSize * 1.2}px`;
+                }
+            };
+        }
+
+        function showPrevAyahFs() {
+            // In a real app, we would navigate to the previous ayah
+            // For this example, we'll just show a message
+            alert('Previous ayah would be displayed here');
+        }
+
+        function showNextAyahFs() {
+            // In a real app, we would navigate to the next ayah
+            // For this example, we'll just show a message
+            alert('Next ayah would be displayed here');
+        }
+
+        function exitFullscreenMode() {
+            elements.fullscreenMode.style.display = 'none';
+        }
+
+        function showError(message) {
+            console.error(message);
+            alert(message);
+        }
+
+        // Custom contains selector for jQuery-like functionality
+        function containsSelector(selector, text) {
+            const elements = document.querySelectorAll(selector);
+            return Array.from(elements).filter(el => el.textContent.includes(text));
+        }
+    </script>
+
+    <!-- Service Worker Script -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').then(
+                    function(registration) {
+                        console.log('ServiceWorker registration successful');
+                    },
+                    function(err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    }
+                );
+            });
+        }
+    </script>
+</body>
+</html>

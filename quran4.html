@@ -1,0 +1,597 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quran App</title>
+  <style>
+   body { font-family: sans-serif; margin: 0; padding: 0; }
+   #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+   #app { display: none; }
+   .ayah { padding: 10px; border-bottom: 1px solid #eee; }
+   .arabic { font-size: 24px; }
+   .urdu { font-size: 16px; color: #666; }
+   .highlight { background-color: yellow; }
+   #search-results { list-style: none; padding: 0; margin: 0; }
+   #search-results li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+   #bookmarks-list { list-style: none; padding: 0; margin: 0; }
+   #bookmarks-list li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+   #settings-panel { position: fixed; top: 0; right: 0; width: 300px; height: 100%; background: #f9f9f9; box-shadow: -2px 0 5px rgba(0,0,0,0.2); padding: 20px; display: none; }
+   #settings-panel.open { display: block; }
+   input[type="search"] { width: 100%; padding: 10px; margin-bottom: 10px; }
+   /* Minimalistic Futuristic Theme */
+   body {
+    font-family: 'Arial', sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    line-height: 1.6;
+   }
+   #app {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #1e1e1e;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+   }
+   .ayah {
+    padding: 15px;
+    border-bottom: 1px solid #333;
+   }
+   .ayah:last-child {
+    border-bottom: none;
+   }
+   .arabic {
+    font-size: 28px;
+    color: #a7b7c7;
+    margin-bottom: 5px;
+   }
+   .urdu {
+    font-size: 18px;
+    color: #888;
+   }
+   /* Navigation Styles */
+   #navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+   }
+   #navigation button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+   }
+   #navigation button:hover {
+    background-color: #2980b9;
+   }
+   /* Search Styles */
+   #search-container {
+    margin-bottom: 20px;
+   }
+   input[type="search"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: #fff;
+    border-radius: 5px;
+   }
+   input[type="search"]:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+   }
+   /* Bookmark Styles */
+   #bookmarks-list li {
+    padding: 12px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+   }
+   #bookmarks-list li:hover {
+    background-color: #2c3e50;
+   }
+   /* Settings Panel Styles */
+   #settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background: #2c3e50;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.4);
+    padding: 20px;
+    color: #fff;
+    display: none; /* Hidden by default */
+   }
+   #settings-panel.open {
+    display: block;
+   }
+   #settings-panel h2 {
+    color: #3498db;
+    margin-bottom: 20px;
+   }
+   #settings-panel label {
+    display: block;
+    margin-bottom: 5px;
+    color: #a7b7c7;
+   }
+   #settings-panel input[type="range"],
+   #settings-panel select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 5px;
+   }
+   #settings-panel button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+   }
+   #settings-panel button:hover {
+    background-color: #c0392b;
+   }
+   #settings-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    z-index: 1000;
+   }
+   #settings-toggle:hover {
+    background-color: #2980b9;
+   }
+   /* Full Screen Mode */
+   .fullscreen-mode body {
+    background-color: #000;
+    color: #fff;
+   }
+   .fullscreen-mode #app {
+    max-width: none;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-shadow: none;
+    border-radius: 0;
+   }
+   .fullscreen-mode #navigation,
+   .fullscreen-mode #search-container,
+   .fullscreen-mode #settings-toggle {
+    display: none;
+   }
+   .fullscreen-mode .ayah {
+    border-bottom: 1px solid #555;
+   }
+   .fullscreen-mode .arabic {
+    font-size: 32px;
+   }
+   .fullscreen-mode .urdu {
+    font-size: 20px;
+   }
+  </style>
+ </head>
+ <body>
+  <div id="loading">Loading...</div>
+  <button id="settings-toggle">Settings</button>
+  <div id="app">
+   <div id="navigation">
+    <button id="prev-surah">Previous Surah</button>
+    <select id="surah-list"></select>
+    <button id="next-surah">Next Surah</button>
+    <button id="fullscreen-button">Fullscreen</button>
+   </div>
+   <div id="search-container">
+    <input type="search" id="search-input" placeholder="Search Quran">
+    <ul id="search-results"></ul>
+   </div>
+   <div id="ayahs-container"></div>
+   <h2>Bookmarks</h2>
+   <ul id="bookmarks-list"></ul>
+  </div>
+  <div id="settings-panel">
+   <h2>Settings</h2>
+   <label for="ui-language">UI Language:</label>
+   <select id="ui-language">
+    <option value="en">English</option>
+    <option value="ur">Urdu</option>
+   </select>
+   <label for="theme">Theme:</label>
+   <select id="theme">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+   </select>
+   <label for="font-size">Font Size:</label>
+   <input type="range" id="font-size" min="12" max="24" value="16">
+   <label for="lines-per-page">Lines per Page:</label>
+   <input type="number" id="lines-per-page" min="5" max="20" value="10">
+   <label for="content-visibility">Content Visibility:</label>
+   <select id="content-visibility">
+    <option value="both">Arabic & Urdu</option>
+    <option value="arabic">Arabic Only</option>
+    <option value="urdu">Urdu Only</option>
+   </select>
+   <button id="backup-button">Backup Data</button>
+   <button id="restore-button">Restore Data</button>
+  </div>
+  <script>
+   const loadingDiv = document.getElementById('loading');
+   const appDiv = document.getElementById('app');
+   const surahListSelect = document.getElementById('surah-list');
+   const ayahsContainer = document.getElementById('ayahs-container');
+   const searchInput = document.getElementById('search-input');
+   const searchResultsList = document.getElementById('search-results');
+   const bookmarksList = document.getElementById('bookmarks-list');
+   const settingsPanel = document.getElementById('settings-panel');
+   const settingsToggle = document.getElementById('settings-toggle');
+   const uiLanguageSelect = document.getElementById('ui-language');
+   const themeSelect = document.getElementById('theme');
+   const fontSizeInput = document.getElementById('font-size');
+   const contentVisibilitySelect = document.getElementById('content-visibility');
+   const backupButton = document.getElementById('backup-button');
+   const restoreButton = document.getElementById('restore-button');
+   const prevSurahButton = document.getElementById('prev-surah');
+   const nextSurahButton = document.getElementById('next-surah');
+   const fullscreenButton = document.getElementById('fullscreen-button');
+   const linesPerPageInput = document.getElementById('lines-per-page');
+   let quranData = [];
+   let currentSurah = 1;
+   let db;
+   const DB_NAME = 'quranDB';
+   const DB_VERSION = 1;
+   const AYAH_STORE = 'ayahs';
+   // IndexedDB setup
+   function initDB() {
+    return new Promise((resolve, reject) => {
+     const request = indexedDB.open(DB_NAME, DB_VERSION);
+     request.onerror = () => reject(request.error);
+     request.onsuccess = () => {
+      db = request.result;
+      resolve();
+     };
+     request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      db.createObjectStore(AYAH_STORE, { autoIncrement: true });
+     };
+    });
+   }
+   // Fetch data from file
+   async function fetchData() {
+    try {
+     const response = await fetch('data/data.AM');
+     if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+     }
+     const text = await response.text();
+     return text.split('\n').filter(line => line.trim() !== '');
+    } catch (error) {
+     console.error('Failed to fetch data:', error);
+     return [];
+    }
+   }
+   // Parse data and store in IndexedDB
+   async function populateDB(data) {
+    const transaction = db.transaction(AYAH_STORE, 'readwrite');
+    const store = transaction.objectStore(AYAH_STORE);
+    for (const line of data) {
+     const [arabic, urduPart] = line.split(' ترجمہ: ');
+     if (!urduPart) continue;
+     const [urdu, surahAyahPart] = urduPart.split('س');
+     if (!surahAyahPart) continue;
+     const [surah, ayahPart] = surahAyahPart.split('آ');
+     if (!ayahPart) continue;
+     const ayah = parseInt(ayahPart.trim(), 10);
+     const surahNum = parseInt(surah.trim(), 10);
+     store.put({
+      arabic: arabic.trim(),
+      urdu: urdu.trim(),
+      surah: surahNum,
+      ayah: ayah
+     });
+    }
+    await transaction.done;
+   }
+   async function loadQuranData() {
+    try {
+     const data = await fetchData();
+     await populateDB(data);
+     console.log('Quran data loaded into IndexedDB');
+    } catch (error) {
+     console.error('Failed to load and store Quran data:', error);
+    }
+   }
+   async function checkAndLoadData() {
+    const dataLoaded = localStorage.getItem('quranDataLoaded');
+    if (!dataLoaded) {
+     await loadQuranData();
+     localStorage.setItem('quranDataLoaded', 'true');
+    }
+   }
+   // Load Ayahs from IndexedDB
+   async function loadAyahs(surahNumber) {
+    return new Promise((resolve, reject) => {
+     const transaction = db.transaction(AYAH_STORE, 'readonly');
+     const store = transaction.objectStore(AYAH_STORE);
+     const request = store.openCursor();
+     const ayahs = [];
+     request.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+       if (cursor.value.surah === surahNumber) {
+        ayahs.push(cursor.value);
+       }
+       cursor.continue();
+      } else {
+       resolve(ayahs);
+      }
+     };
+     request.onerror = () => reject(request.error);
+    });
+   }
+   function displayAyahs(ayahs) {
+    ayahsContainer.innerHTML = '';
+    const linesPerPage = parseInt(linesPerPageInput.value, 10);
+    let page = 0;
+    while (page * linesPerPage < ayahs.length) {
+     const pageAyahs = ayahs.slice(page * linesPerPage, (page + 1) * linesPerPage);
+     pageAyahs.forEach(ayah => {
+      const ayahDiv = document.createElement('div');
+      ayahDiv.classList.add('ayah');
+      const arabicDiv = document.createElement('div');
+      arabicDiv.classList.add('arabic');
+      arabicDiv.textContent = ayah.arabic;
+      const urduDiv = document.createElement('div');
+      urduDiv.classList.add('urdu');
+      urduDiv.textContent = ayah.urdu;
+      if (contentVisibilitySelect.value === 'arabic' || contentVisibilitySelect.value === 'both') {
+       ayahDiv.appendChild(arabicDiv);
+      }
+      if (contentVisibilitySelect.value === 'urdu' || contentVisibilitySelect.value === 'both') {
+       ayahDiv.appendChild(urduDiv);
+      }
+      ayahsContainer.appendChild(ayahDiv);
+     });
+     page++;
+    }
+   }
+   // Load Surah list
+   async function loadSurahList() {
+    const surahNames = [
+     "الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام", "الأعراف", "الأنفال", "التوبة", "يونس",
+     "هود", "يوسف", "الرعد", "إبراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه",
+     "الأنبياء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء", "النمل", "القصص", "العنكبوت", "الروم",
+     "لقمان", "السجدة", "الأحزاب", "سبأ", "فاطر", "يس", "الصافات", "ص", "الزمر", "غافر",
+     "فصلت", "الشورى", "الزخرف", "الدخان", "الجاثية", "الأحقاف", "محمد", "الفتح", "الحجرات", "ق",
+     "الذاريات", "الطور", "النجم", "القمر", "الرحمن", "الواقعة", "الحديد", "المجادلة", "الحشر", "الممتحنة",
+     "الصف", "الجمعة", "المنافقون", "التغابن", "الطلاق", "التحريم", "الملك", "القلم", "الحاقة", "المعارج",
+     "نوح", "الجن", "المزمل", "المدثر", "القيامة", "الإنسان", "المرسلات", "النبأ", "النازعات", "عبس",
+     "التكوير", "الإنفطار", "المطففين", "الإنشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد",
+     "الشمس", "الليل", "الضحى", "الشرح", "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات",
+     "القارعة", "التكاثر", "العصر", "الهمزة", "الفيل", "قريش", "الماعون", "الكوثر", "الكافرون", "النصر",
+     "المسد", "الإخلاص", "الفلق", "الناس"
+    ];
+    surahNames.forEach((name, index) => {
+     const option = document.createElement('option');
+     option.value = index + 1;
+     option.textContent = `${index + 1}. ${name}`;
+     surahListSelect.appendChild(option);
+    });
+   }
+   // Search functionality
+   function searchQuran(searchTerm) {
+    searchTerm = searchTerm.trim().toLowerCase();
+    if (!searchTerm) {
+     searchResultsList.innerHTML = '';
+     return;
+    }
+    const transaction = db.transaction(AYAH_STORE, 'readonly');
+    const store = transaction.objectStore(AYAH_STORE);
+    const request = store.openCursor();
+    const results = [];
+    request.onsuccess = (event) => {
+     const cursor = event.target.result;
+     if (cursor) {
+      const ayah = cursor.value;
+      if (ayah.arabic.toLowerCase().includes(searchTerm) || ayah.urdu.toLowerCase().includes(searchTerm)) {
+       results.push({
+        ...ayah,
+        key: cursor.key
+       });
+      }
+      cursor.continue();
+     } else {
+      displaySearchResults(results);
+     }
+    };
+   }
+   function displaySearchResults(results) {
+    searchResultsList.innerHTML = '';
+    results.forEach(result => {
+     const listItem = document.createElement('li');
+     listItem.innerHTML = `<span class="arabic">${highlightSearchTerm(result.arabic, searchInput.value)}</span><br><span class="urdu">${highlightSearchTerm(result.urdu, searchInput.value)}</span>`;
+     listItem.addEventListener('click', () => {
+      currentSurah = result.surah;
+      surahListSelect.value = result.surah;
+      loadAndDisplayAyahs(result.surah);
+      searchResultsList.innerHTML = '';
+      searchInput.value = '';
+     });
+     searchResultsList.appendChild(listItem);
+    });
+   }
+   function highlightSearchTerm(text, searchTerm) {
+    const regex = new RegExp(searchTerm, 'gi');
+    return text.replace(regex, '<span class="highlight">$&</span>');
+   }
+   // Bookmarks
+   function addBookmark(ayah) {
+    let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+    bookmarks.push(ayah);
+    localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+    displayBookmarks();
+   }
+   function removeBookmark(ayah) {
+    let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+    bookmarks = bookmarks.filter(b => b.arabic !== ayah.arabic);
+    localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+    displayBookmarks();
+   }
+   function displayBookmarks() {
+    bookmarksList.innerHTML = '';
+    let bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+    bookmarks.forEach(bookmark => {
+     const listItem = document.createElement('li');
+     listItem.innerHTML = `<span class="arabic">${bookmark.arabic}</span><br><span class="urdu">${bookmark.urdu}</span>`;
+     listItem.addEventListener('click', () => {
+      currentSurah = bookmark.surah;
+      surahListSelect.value = bookmark.surah;
+      loadAndDisplayAyahs(bookmark.surah);
+     });
+     bookmarksList.appendChild(listItem);
+    });
+   }
+   // Settings
+   function applySettings() {
+    document.body.className = themeSelect.value === 'dark' ? 'dark-theme' : '';
+    document.body.style.fontSize = fontSizeInput.value + 'px';
+    // Save settings
+    const settings = {
+     uiLanguage: uiLanguageSelect.value,
+     theme: themeSelect.value,
+     fontSize: fontSizeInput.value,
+     contentVisibility: contentVisibilitySelect.value,
+     linesPerPage: linesPerPageInput.value,
+    };
+    localStorage.setItem('settings', JSON.stringify(settings));
+   }
+   function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('settings') || '{}');
+    uiLanguageSelect.value = settings.uiLanguage || 'en';
+    themeSelect.value = settings.theme || 'light';
+    fontSizeInput.value = settings.fontSize || '16';
+    contentVisibilitySelect.value = settings.contentVisibility || 'both';
+    linesPerPageInput.value = settings.linesPerPage || '10';
+    applySettings();
+   }
+   // Backup and Restore
+   function backupData() {
+    const data = {
+     bookmarks: JSON.parse(localStorage.getItem('bookmarks') || '[]'),
+     settings: JSON.parse(localStorage.getItem('settings') || '{}')
+    };
+    const json = JSON.stringify(data);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quran_backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+   }
+   function restoreData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+     const file = event.target.files[0];
+     const reader = new FileReader();
+     reader.onload = (e) => {
+      const json = e.target.result;
+      const data = JSON.parse(json);
+      localStorage.setItem('bookmarks', JSON.stringify(data.bookmarks));
+      localStorage.setItem('settings', JSON.stringify(data.settings));
+      loadSettings();
+      displayBookmarks();
+     };
+     reader.readAsText(file);
+    };
+    input.click();
+   }
+   // Fullscreen
+   function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+     document.documentElement.requestFullscreen();
+     document.body.classList.add('fullscreen-mode');
+    } else {
+     if (document.exitFullscreen) {
+      document.exitFullscreen();
+      document.body.classList.remove('fullscreen-mode');
+     }
+    }
+   }
+   // Load and Display Ayahs
+   async function loadAndDisplayAyahs(surahNumber) {
+    const ayahs = await loadAyahs(surahNumber);
+    displayAyahs(ayahs);
+   }
+   // Event listeners
+   surahListSelect.addEventListener('change', (e) => {
+    currentSurah = parseInt(e.target.value, 10);
+    loadAndDisplayAyahs(currentSurah);
+   });
+   searchInput.addEventListener('input', () => {
+    searchQuran(searchInput.value);
+   });
+   settingsToggle.addEventListener('click', () => {
+    settingsPanel.classList.toggle('open');
+   });
+   uiLanguageSelect.addEventListener('change', applySettings);
+   themeSelect.addEventListener('change', applySettings);
+   fontSizeInput.addEventListener('input', applySettings);
+   contentVisibilitySelect.addEventListener('change', applySettings);
+   backupButton.addEventListener('click', backupData);
+   restoreButton.addEventListener('click', restoreData);
+   prevSurahButton.addEventListener('click', () => {
+    currentSurah = Math.max(1, currentSurah - 1);
+    surahListSelect.value = currentSurah;
+    loadAndDisplayAyahs(currentSurah);
+   });
+   nextSurahButton.addEventListener('click', () => {
+    currentSurah = Math.min(114, currentSurah + 1);
+    surahListSelect.value = currentSurah;
+    loadAndDisplayAyahs(currentSurah);
+   });
+   fullscreenButton.addEventListener('click', toggleFullscreen);
+   linesPerPageInput.addEventListener('change', () => {
+    loadAndDisplayAyahs(currentSurah);
+    applySettings();
+   });
+   // Initialization
+   async function initializeApp() {
+    await initDB();
+    await checkAndLoadData();
+    await loadSurahList();
+    loadSettings();
+    surahListSelect.value = currentSurah;
+    await loadAndDisplayAyahs(currentSurah);
+    displayBookmarks();
+    loadingDiv.style.display = 'none';
+    appDiv.style.display = 'block';
+   }
+   initializeApp();
+  </script>
+ </body>
+ </html>

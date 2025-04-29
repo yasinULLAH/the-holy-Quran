@@ -1,0 +1,658 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quran App</title>
+  <style>
+   body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    color: #333;
+   }
+
+   #loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+   }
+
+   #loading-progress {
+    font-size: 1.5em;
+   }
+
+   #main-content {
+    padding: 20px;
+   }
+
+   #surah-list {
+    list-style: none;
+    padding: 0;
+   }
+
+   #surah-list li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+   }
+
+   #ayah-view {
+    margin-top: 20px;
+   }
+
+   .ayah {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+   }
+
+   .arabic {
+    font-size: 1.2em;
+    line-height: 1.5;
+   }
+
+   .urdu {
+    font-size: 1em;
+    color: #555;
+   }
+
+   #search-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+   }
+
+   .highlight {
+    background-color: yellow;
+   }
+
+   #bookmarks-list {
+    list-style: none;
+    padding: 0;
+   }
+
+   #bookmarks-list li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+   }
+
+   #settings-panel {
+    margin-top: 20px;
+   }
+
+   /* Minimalistic Futuristic Styling */
+   body {
+    background-color: #0a192f;
+    color: #ccd6f6;
+   }
+
+   a {
+    color: #64ffda;
+    text-decoration: none;
+   }
+
+   #main-content {
+    background-color: #112240;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+   }
+
+   input[type="text"],
+   select,
+   button {
+    padding: 8px;
+    margin: 5px;
+    border-radius: 4px;
+    border: 1px solid #64ffda;
+    background-color: #112240;
+    color: #ccd6f6;
+   }
+
+   button {
+    cursor: pointer;
+    transition: background-color 0.3s;
+   }
+
+   button:hover {
+    background-color: #64ffda;
+    color: #0a192f;
+   }
+
+   /* Full Screen Mode */
+   .fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0a192f;
+    color: #ccd6f6;
+    z-index: 2000;
+    padding: 20px;
+   }
+
+   .fullscreen button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+   }
+  </style>
+ </head>
+ <body>
+
+  <div id="loading">
+   <span id="loading-progress">Loading...</span>
+  </div>
+
+  <div id="main-content" style="display: none;">
+   <h1>Quran App</h1>
+
+   <div id="navigation">
+    <h2>Surah List</h2>
+    <ul id="surah-list"></ul>
+   </div>
+
+   <div id="ayah-view">
+    <h2>Ayahs</h2>
+    <div id="ayahs-container"></div>
+   </div>
+
+   <div id="search">
+    <h2>Search</h2>
+    <input type="text" id="search-input" placeholder="Search Ayahs">
+    <div id="search-results"></div>
+   </div>
+
+   <div id="bookmarks">
+    <h2>Bookmarks</h2>
+    <ul id="bookmarks-list"></ul>
+   </div>
+
+   <div id="reading-progress">
+    <h2>Reading Progress</h2>
+    <p id="progress-text"></p>
+   </div>
+
+   <div id="settings-panel">
+    <h2>Settings</h2>
+    <label for="theme-select">Theme:</label>
+    <select id="theme-select">
+     <option value="light">Light</option>
+     <option value="dark">Dark</option>
+    </select>
+    <br>
+    <label for="font-size-select">Font Size:</label>
+    <select id="font-size-select">
+     <option value="16">16px</option>
+     <option value="18">18px</option>
+     <option value="20">20px</option>
+    </select>
+    <br>
+    <label for="lines-per-page">Lines per Page:</label>
+    <input type="number" id="lines-per-page" value="10">
+    <br>
+    <button id="backup-button">Backup Data</button>
+    <button id="restore-button">Restore Data</button>
+   </div>
+  </div>
+
+  <div id="fullscreen-mode" style="display: none;">
+   <div id="fullscreen-content"></div>
+   <button id="exit-fullscreen">Exit Fullscreen</button>
+  </div>
+
+  <script>
+   const dbName = 'quranDB';
+   const dbVersion = 1;
+   let db;
+
+   const loadingDiv = document.getElementById('loading');
+   const loadingProgress = document.getElementById('loading-progress');
+   const mainContent = document.getElementById('main-content');
+   const surahList = document.getElementById('surah-list');
+   const ayahsContainer = document.getElementById('ayahs-container');
+   const searchInput = document.getElementById('search-input');
+   const searchResults = document.getElementById('search-results');
+   const bookmarksList = document.getElementById('bookmarks-list');
+   const progressText = document.getElementById('progress-text');
+   const themeSelect = document.getElementById('theme-select');
+   const fontSizeSelect = document.getElementById('font-size-select');
+   const linesPerPageInput = document.getElementById('lines-per-page');
+   const backupButton = document.getElementById('backup-button');
+   const restoreButton = document.getElementById('restore-button');
+   const fullscreenModeDiv = document.getElementById('fullscreen-mode');
+   const fullscreenContentDiv = document.getElementById('fullscreen-content');
+   const exitFullscreenButton = document.getElementById('exit-fullscreen');
+
+   let ayahs = [];
+   let bookmarks = [];
+   let currentSurah = null;
+   let settings = {
+    theme: 'light',
+    fontSize: 16,
+    linesPerPage: 10
+   };
+   let isFullscreen = false;
+
+   function initDB() {
+    return new Promise((resolve, reject) => {
+     const request = indexedDB.open(dbName, dbVersion);
+
+     request.onerror = (event) => {
+      console.error('IndexedDB error:', event.target.errorCode);
+      reject(event.target.errorCode);
+     };
+
+     request.onsuccess = (event) => {
+      db = event.target.result;
+      resolve();
+     };
+
+     request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      const objectStore = db.createObjectStore('ayahs', {
+       keyPath: 'id',
+       autoIncrement: true
+      });
+      objectStore.createIndex('text', 'text', {
+       unique: false
+      });
+     };
+    });
+   }
+
+   function fetchData() {
+    return fetch('data/data.AM')
+     .then(response => response.text());
+   }
+
+   function parseData(data) {
+    const lines = data.trim().split('\n');
+    const parsedAyahs = [];
+    lines.forEach((line, index) => {
+     const parts = line.split('س');
+     if (parts.length === 2) {
+      const ayahInfo = parts[1].split(' آ');
+      if (ayahInfo.length === 2) {
+       const surahNumber = parseInt(ayahInfo[0].trim());
+       const ayahNumber = parseInt(ayahInfo[1].trim());
+       const textParts = parts[0].split('ترجمہ:');
+       if (textParts.length === 2) {
+        const arabicText = textParts[0].trim();
+        const urduTranslation = textParts[1].trim();
+        parsedAyahs.push({
+         surah: surahNumber,
+         ayah: ayahNumber,
+         arabic: arabicText,
+         urdu: urduTranslation,
+         text: `${arabicText} ${urduTranslation}`
+        });
+       }
+      }
+     }
+    });
+    return parsedAyahs;
+   }
+
+   function storeData(ayahs) {
+    return new Promise((resolve, reject) => {
+     const transaction = db.transaction(['ayahs'], 'readwrite');
+     const objectStore = transaction.objectStore('ayahs');
+
+     ayahs.forEach(ayah => {
+      objectStore.add(ayah);
+     });
+
+     transaction.oncomplete = () => {
+      console.log('Data stored successfully');
+      resolve();
+     };
+
+     transaction.onerror = (event) => {
+      console.error('Error storing data:', event.target.errorCode);
+      reject(event.target.errorCode);
+     };
+    });
+   }
+
+   function loadAyahs() {
+    return new Promise((resolve, reject) => {
+     const transaction = db.transaction(['ayahs'], 'readonly');
+     const objectStore = transaction.objectStore('ayahs');
+     const request = objectStore.getAll();
+
+     request.onsuccess = (event) => {
+      ayahs = event.target.result;
+      resolve(ayahs);
+     };
+
+     request.onerror = (event) => {
+      console.error('Error loading ayahs:', event.target.errorCode);
+      reject(event.target.errorCode);
+     };
+    });
+   }
+
+   function displaySurahList() {
+    const surahCounts = {};
+    ayahs.forEach(ayah => {
+     if (!surahCounts[ayah.surah]) {
+      surahCounts[ayah.surah] = 0;
+     }
+     surahCounts[ayah.surah]++;
+    });
+
+    for (let surahNumber in surahCounts) {
+     const li = document.createElement('li');
+     li.textContent = `Surah ${surahNumber} (${surahCounts[surahNumber]} Ayahs)`;
+     li.addEventListener('click', () => displayAyahs(surahNumber));
+     surahList.appendChild(li);
+    }
+   }
+
+   function displayAyahs(surahNumber) {
+    currentSurah = surahNumber;
+    ayahsContainer.innerHTML = '';
+    const surahAyahs = ayahs.filter(ayah => ayah.surah == surahNumber);
+    surahAyahs.forEach(ayah => {
+     const ayahDiv = document.createElement('div');
+     ayahDiv.classList.add('ayah');
+     ayahDiv.innerHTML = `
+       <div class="arabic">${ayah.arabic}</div>
+       <div class="urdu">${ayah.urdu}</div>
+       <div>
+        <button onclick="toggleBookmark(${ayah.id})">${isBookmarked(ayah.id) ? 'Remove Bookmark' : 'Bookmark'}</button>
+       </div>
+      `;
+     ayahsContainer.appendChild(ayahDiv);
+    });
+   }
+
+   function searchAyahs(searchTerm) {
+    searchResults.innerHTML = '';
+    const results = ayahs.filter(ayah => {
+     const text = ayah.arabic + ' ' + ayah.urdu;
+     return text.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    results.forEach(ayah => {
+     const resultDiv = document.createElement('div');
+     resultDiv.classList.add('ayah');
+     let text = ayah.arabic + ' ' + ayah.urdu;
+     const regex = new RegExp(searchTerm, 'gi');
+     text = text.replace(regex, match => `<span class="highlight">${match}</span>`);
+     resultDiv.innerHTML = `
+       <div class="arabic">${text}</div>
+       <div>Surah ${ayah.surah}, Ayah ${ayah.ayah}</div>
+      `;
+     searchResults.appendChild(resultDiv);
+    });
+   }
+
+   function toggleBookmark(ayahId) {
+    const index = bookmarks.indexOf(ayahId);
+    if (index > -1) {
+     bookmarks.splice(index, 1);
+    } else {
+     bookmarks.push(ayahId);
+    }
+    displayBookmarks();
+    displayAyahs(currentSurah);
+    saveSettings();
+   }
+
+   function isBookmarked(ayahId) {
+    return bookmarks.includes(ayahId);
+   }
+
+   function displayBookmarks() {
+    bookmarksList.innerHTML = '';
+    bookmarks.forEach(ayahId => {
+     const ayah = ayahs.find(a => a.id === ayahId);
+     if (ayah) {
+      const li = document.createElement('li');
+      li.textContent = `Surah ${ayah.surah}, Ayah ${ayah.ayah}: ${ayah.arabic.substring(0, 50)}...`;
+      li.addEventListener('click', () => displayAyahs(ayah.surah));
+      bookmarksList.appendChild(li);
+     }
+    });
+   }
+
+   function updateReadingProgress() {
+    progressText.textContent = `Bookmarked ${bookmarks.length} ayahs`;
+   }
+
+   function applySettings() {
+    document.body.className = settings.theme;
+    document.body.style.fontSize = `${settings.fontSize}px`;
+   }
+
+   function saveSettings() {
+    localStorage.setItem('quranSettings', JSON.stringify({
+     bookmarks: bookmarks,
+     theme: settings.theme,
+     fontSize: settings.fontSize,
+     linesPerPage: settings.linesPerPage
+    }));
+   }
+
+   function loadSettings() {
+    const storedSettings = localStorage.getItem('quranSettings');
+    if (storedSettings) {
+     const parsedSettings = JSON.parse(storedSettings);
+     bookmarks = parsedSettings.bookmarks || [];
+     settings.theme = parsedSettings.theme || 'light';
+     settings.fontSize = parsedSettings.fontSize || 16;
+     settings.linesPerPage = parsedSettings.linesPerPage || 10;
+     themeSelect.value = settings.theme;
+     fontSizeSelect.value = settings.fontSize;
+     linesPerPageInput.value = settings.linesPerPage;
+     applySettings();
+     displayBookmarks();
+     updateReadingProgress();
+    }
+   }
+
+   function backupData() {
+    const data = JSON.stringify({
+     ayahs: ayahs,
+     bookmarks: bookmarks,
+     settings: settings
+    });
+    const blob = new Blob([data], {
+     type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quran_backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+   }
+
+   function restoreData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = event => {
+     const file = event.target.files[0];
+     const reader = new FileReader();
+     reader.onload = e => {
+      const data = JSON.parse(e.target.result);
+      ayahs = data.ayahs;
+      bookmarks = data.bookmarks;
+      settings = data.settings;
+      localStorage.setItem('quranSettings', JSON.stringify({
+       bookmarks: bookmarks,
+       theme: settings.theme,
+       fontSize: settings.fontSize,
+       linesPerPage: settings.linesPerPage
+      }));
+      themeSelect.value = settings.theme;
+      fontSizeSelect.value = settings.fontSize;
+      linesPerPageInput.value = settings.linesPerPage;
+      applySettings();
+      displayBookmarks();
+      updateReadingProgress();
+      displaySurahList();
+     };
+     reader.readAsText(file);
+    };
+    input.click();
+   }
+
+   function enterFullscreen() {
+    isFullscreen = true;
+    fullscreenModeDiv.style.display = 'block';
+    mainContent.style.display = 'none';
+    const currentAyahs = ayahs.filter(ayah => ayah.surah == currentSurah);
+    const linesPerPage = parseInt(settings.linesPerPage);
+    let content = '';
+    for (let i = 0; i < currentAyahs.length; i += linesPerPage) {
+     const pageAyahs = currentAyahs.slice(i, i + linesPerPage);
+     pageAyahs.forEach(ayah => {
+      content += `<div class="arabic">${ayah.arabic}</div><div class="urdu">${ayah.urdu}</div><hr>`;
+     });
+     content += `<div style="page-break-after: always;"></div>`;
+    }
+    fullscreenContentDiv.innerHTML = content;
+   }
+
+   function exitFullscreen() {
+    isFullscreen = false;
+    fullscreenModeDiv.style.display = 'none';
+    mainContent.style.display = 'block';
+   }
+
+   document.addEventListener('keydown', function(event) {
+    if (isFullscreen) {
+     if (event.key === 'ArrowRight') {
+      // Go to next page
+      const currentPage = fullscreenContentDiv.querySelector(':scope > div:not([style*="page-break-after"])');
+      if (currentPage && currentPage.nextElementSibling) {
+       currentPage.style.display = 'none';
+       currentPage.nextElementSibling.style.display = 'block';
+      }
+     } else if (event.key === 'ArrowLeft') {
+      // Go to previous page
+      const currentPage = fullscreenContentDiv.querySelector(':scope > div:not([style*="page-break-after"])');
+      if (currentPage && currentPage.previousElementSibling) {
+       currentPage.style.display = 'none';
+       currentPage.previousElementSibling.style.display = 'block';
+      }
+     }
+    }
+   });
+
+
+   document.addEventListener('touchstart', function(event) {
+    if (isFullscreen) {
+     touchstartX = event.changedTouches[0].screenX;
+    }
+   }, false);
+
+   document.addEventListener('touchend', function(event) {
+    if (isFullscreen) {
+     touchendX = event.changedTouches[0].screenX;
+     handleGesture();
+    }
+   }, false);
+
+   let touchstartX = 0;
+   let touchendX = 0;
+
+   function handleGesture() {
+    if (touchendX < touchstartX) {
+     // Swiped left - next page
+     const currentPage = fullscreenContentDiv.querySelector(':scope > div:not([style*="page-break-after"])');
+     if (currentPage && currentPage.nextElementSibling) {
+      currentPage.style.display = 'none';
+      currentPage.nextElementSibling.style.display = 'block';
+     }
+    }
+    if (touchendX > touchstartX) {
+     // Swiped right - previous page
+     const currentPage = fullscreenContentDiv.querySelector(':scope > div:not([style*="page-break-after"])');
+     if (currentPage && currentPage.previousElementSibling) {
+      currentPage.style.display = 'none';
+      currentPage.previousElementSibling.style.display = 'block';
+     }
+    }
+   }
+
+   (function() {
+    let isFirstLoad = localStorage.getItem('isFirstLoad');
+
+    initDB()
+     .then(() => {
+      if (!isFirstLoad) {
+       loadingProgress.textContent = 'Fetching data...';
+       return fetchData()
+        .then(data => {
+         loadingProgress.textContent = 'Parsing data...';
+         return parseData(data);
+        })
+        .then(parsedAyahs => {
+         loadingProgress.textContent = 'Storing data...';
+         return storeData(parsedAyahs);
+        })
+        .then(() => {
+         localStorage.setItem('isFirstLoad', 'true');
+         loadingProgress.textContent = 'Loading ayahs...';
+         return loadAyahs();
+        });
+      } else {
+       loadingProgress.textContent = 'Loading ayahs...';
+       return loadAyahs();
+      }
+     })
+     .then(() => {
+      loadingProgress.textContent = 'Initializing UI...';
+      displaySurahList();
+      loadSettings();
+      searchInput.addEventListener('input', () => searchAyahs(searchInput.value));
+      themeSelect.addEventListener('change', () => {
+       settings.theme = themeSelect.value;
+       applySettings();
+       saveSettings();
+      });
+      fontSizeSelect.addEventListener('change', () => {
+       settings.fontSize = parseInt(fontSizeSelect.value);
+       applySettings();
+       saveSettings();
+      });
+      linesPerPageInput.addEventListener('change', () => {
+       settings.linesPerPage = parseInt(linesPerPageInput.value);
+       saveSettings();
+      });
+      backupButton.addEventListener('click', backupData);
+      restoreButton.addEventListener('click', restoreData);
+      exitFullscreenButton.addEventListener('click', exitFullscreen);
+      mainContent.style.display = 'block';
+      loadingDiv.style.display = 'none';
+
+      // Add a button to enter fullscreen mode
+      const fullscreenButton = document.createElement('button');
+      fullscreenButton.textContent = 'Enter Fullscreen';
+      fullscreenButton.addEventListener('click', enterFullscreen);
+      document.getElementById('settings-panel').appendChild(fullscreenButton);
+
+     })
+     .catch(error => {
+      console.error('Initialization failed:', error);
+      loadingProgress.textContent = 'Initialization failed. See console for details.';
+     });
+   })();
+  </script>
+ </body>
+ </html>
